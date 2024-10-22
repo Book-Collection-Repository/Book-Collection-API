@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  postgres-bookCollection:
+    image: bitnami/postgresql:latest
+    ports:
+      - '5431:5432'
+    environment:
+      - POSTGRES_USER=docker
+      - POSTGRES_PASSWORD=docker
+    volumes:
+      - 'bookCollection_pg_data:/bitnami/postgresql'
+  
+  redis-bookCollection:
+    image: bitnami/redis:latest
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - '6378:6379'
+    volumes:
+      - 'bookCollection_redis_data:/bitnami/redis/data'
+
+volumes:
+  bookCollection_pg_data:
+  bookCollection_redis_data:

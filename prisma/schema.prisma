@@ -1,0 +1,247 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========== ENUMS ==========
+
+//Enumeração para o status de envio
+enum ShippingStatus {
+  PENDING // A mensagem ainda está pendente
+  SENT // A mensagem foi enviada
+  DELIVERED // A mensagem foi entregue
+}
+
+//Enumeração para o status de visualização
+enum ViewingStatus {
+  UNSEEN // A mensagem não foi visualizada
+  SEEN // A mensagem foi visualizada
+}
+
+// Enumeração para tipos de coleção padrão
+enum DefaultType {
+  REVIEWED
+  READING
+  WANT_TO_READ
+  READ
+}
+
+// Enumeração para status da coleção (Padrão ou Personalizada)
+enum CollectionStatus {
+  DEFAULT
+  CUSTOM
+}
+
+// ========== MODELO DO BANCO DE DADOS =========
+
+//Entidade User
+model User {
+  id             String  @id @default(uuid())
+  password       String
+  userName       String //Nome de usuário (ex: Douglas da Silva)
+  email          String  @unique
+  profileName    String  @unique //Nome de perfil (ex: 07-Dodi)
+  profileImage   String? @default("Unregistered profile picture")
+  followersCount Int     @default(0) // Contador de seguidores
+  followingCount Int     @default(0) // Contador de seguindo
+
+  //Relacionamentos
+  messagesSent     Message[]      @relation("UserMessagesSent")
+  messagesReceived Message[]      @relation("UserMessagesReceived")
+  followers        Follow[]       @relation("UserFollowers") // Usuários que seguem este usuário
+  following        Follow[]       @relation("UserFollowing") // Usuários que este usuário está seguindo
+  collections      Collection[]   @relation("UserCollection")
+  avaliations      Avaliation[]
+  readingDiaries   ReadingDiary[]
+  publications     Publication[]
+  commentaries     Comment[]
+  likes            Like[]
+
+  //Data de criação
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//Entidade Message
+model Message {
+  id             String         @id @default(uuid())
+  content        String
+  viewing        ViewingStatus  @default(UNSEEN) // Utilizando Enum para visualizar
+  shippingStatus ShippingStatus @default(PENDING) // Utilizando Enum para status de envio
+
+  //Relacionamentos
+  senderId String
+  sender   User   @relation("UserMessagesSent", fields: [senderId], references: [id], onDelete: Cascade)
+
+  receiverId String
+  receiver   User   @relation("UserMessagesReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  //Data de criação
+  createdAt DateTime @default(now())
+}
+
+//Entidade Follow
+model Follow {
+  followerId String
+  followedId String
+
+  follower User @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  followed User @relation("UserFollowing", fields: [followedId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([followerId, followedId]) //Chave primária composta
+}
+
+//Entidade Book
+model Book {
+  id             String  @id @default(uuid())
+  ISBN           String? @unique
+  title          String  @unique
+  coverImage     String
+  summary        String?
+  author         String
+  publisher      String
+  quantityPages  Int
+  mainGenre      String
+  secondaryGenre String
+
+  //Relacionamentos
+  collections    BookCollection[]
+  avaliations    Avaliation[]
+  readingDiaries ReadingDiary[]
+}
+
+//Entidade Collection
+model Collection {
+  id               String           @id @default(uuid())
+  collectionStatus CollectionStatus
+  defaultType      DefaultType? // Aplicável apenas se for do tipo DEFAULT
+  description      String?
+  title            String
+  visibility       Boolean // Se é visível para outros ou não
+  createdAt        DateTime         @default(now())
+
+  // Relacionamento com o usuário (quem criou a coleção)
+  userId         String
+  userCollection User   @relation("UserCollection", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Relacionamento com os livros
+  books BookCollection[]
+}
+
+// Entidade BookCollection
+model BookCollection {
+  bookId       String
+  collectionId String
+  addedAt      DateTime @default(now())
+
+  // Relacionamentos
+  book       Book       @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  // Chave primária composta
+  @@id([bookId, collectionId])
+}
+
+//Entidade Avaliation
+model Avaliation {
+  id              String   @id @default(uuid())
+  content         String
+  evaluationGrade String
+  createdAt       DateTime @default(now())
+
+  // Relacionamento com o usuário que fez a avaliação
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Relacionamento com o livro avaliado
+  bookId String
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+}
+
+//Entidade ReadingDiary
+model ReadingDiary {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  //Relacionamento com registros de diário
+  readingDiaryRecords ReadingDiaryRecord[]
+
+  // Relacionamento com o usuário que fez a avaliação
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Relacionamento com o livro avaliado
+  bookId String
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+}
+
+//Entidade ReadingDiaryRecord
+model ReadingDiaryRecord {
+  id              String   @id @default(uuid())
+  content         String
+  pagesRead       Int
+  evaluationGrade String
+  createdAt       DateTime @default(now())
+
+  //Relacionamento com o diário de leitura
+  readingDiaryId String
+  readingDiary   ReadingDiary @relation(fields: [readingDiaryId], references: [id], onDelete: Cascade)
+}
+
+//Entidade Publication
+model Publication {
+  id                String   @id @default(uuid())
+  content           String
+  commentariesCount Int      @default(0) // Contador de comentários
+  likesCount        Int      @default(0) // Contador de curtidas
+  createdAt         DateTime @default(now())
+
+  //Relacionamento
+  commentaries Comment[]
+  likes        Like[]
+
+  //Relacionamento com o usuário que criou a publicação
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+//Entidade Comment
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  //Relacionamento com o usuário que comentou a publicação
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  //Relacionamento com  a publicação
+  publicationId String
+  publication   Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+}
+
+//Entidade Like
+model Like {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  //Relacionamento com o usuário que comentou a publicação
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  //Relacionamento com  a publicação
+  publicationId String
+  publication   Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+}
