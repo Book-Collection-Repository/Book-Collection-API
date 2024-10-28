@@ -1,0 +1,163 @@
+//Importações
+import { prisma } from "./prisma";
+import { v4 as uuidv4 } from "uuid";
+
+//Type
+import { CreateUserDTO, UpdatePasswordUserDTO, UpdateProfileUserDTO } from "../types/userTypes";
+
+//Class
+export class UserService {
+
+    //Retornar todos os usuários cadastrados no sistema
+    async getAllUsers() {
+        return await prisma.user.findMany();
+    }
+
+    //Procura um usuário com um determinado id
+    async getUserByID(id: string) {
+        const user = await prisma.user.findUnique({
+            where: { id }
+        });
+
+        return user;
+    }
+
+    //Procura um usuário com um determinado email
+    async getUserByEmail(email: string){
+        const userEmail = await prisma.user.findUnique({
+            where: { email }
+        });
+
+        return userEmail;
+    };
+
+    //Procurar um usuário com um determinado email, mas com id diferente
+    async getUserByEmailButNotID(email: string, id: string) {
+        const data = await prisma.user.findFirst({
+            where:{
+                email,
+                id: {not: id}
+            }
+        });
+
+        return data;
+    };
+
+    // Procura um usuário com um determinado nome de perfil
+    async getUserByProfileName(profileName: string) {
+        const userProfileName = await prisma.user.findUnique({
+            where: { profileName }
+        });
+
+        return userProfileName;
+    };
+
+    //Procurando um usuário com um determinado nome de perfil, mas com id diferente
+    async getUserByProfileNameButNotID(profileName: string, id: string) {
+        const data = await prisma.user.findFirst({
+            where: {
+                profileName,
+                id: {not: id}
+            }
+        });
+
+        return data;
+    }
+    
+    // Validando se existe um usuário com o mesmo e-mail ou nome de perfil
+    public async validateUserInformation(email: string, profileName: string): Promise<string | null> {
+        const emailExists = await this.getUserByEmail(email);
+        const profileNameExists = await this.getUserByProfileName(profileName);
+
+        if (emailExists) return 'Email already exists';
+        if (profileNameExists) return 'Profile name already exists';
+
+        return null;
+    };
+
+    public async validateUserInformationUpdate( email: string, profileName: string, idUser: string ): Promise<string | null> {
+        const emailExists = await this.getUserByEmailButNotID(email, idUser);
+        const profileNameExists = await this.getUserByProfileNameButNotID(profileName, idUser);
+    
+        if (emailExists) return 'Email already exists';
+        if (profileNameExists) return 'Profile name already exists';
+    
+        return null;
+    };
+    
+    // Cria um usuário com as informações que foram passadas
+    async createUser(data: CreateUserDTO) {
+        try {
+            const user = await prisma.user.create({
+                data: { ...data }
+            });
+
+            return user;
+        } catch (error) {
+            console.error("Error creating user: ", error);
+            throw new Error("Failed to create user");
+        }
+    };
+
+    // Editando as informações de um usuário
+    async updateUser(data: UpdateProfileUserDTO, id: string) {
+        try {
+            const user = await prisma.user.update({
+                where: {id},
+                data: {... data,}
+            });
+            
+            return user;
+
+        } catch (error) {
+            console.error("Error updating user: ", error);
+            throw new Error("Failed to update user");
+        }
+    };
+
+    //Editando a senha de um usuário
+    async updatePasswordUser(data: UpdatePasswordUserDTO) {
+        try {
+            const user = await prisma.user.update({
+                where: {email: data.email},
+                data: {password: data.password}
+            });
+            
+            return user;
+
+        } catch (error) {
+            console.error("Error updating user: ", error);
+            throw new Error("Failed to update user");
+        }
+    };
+
+    //Adicionando foto de perfil
+    async updatePhotoUser(id: string, fileName: string) {
+        try {
+            const user = await prisma.user.update({
+                where: {id},
+                data: {profileImage: fileName}
+            });
+            
+            return user;
+
+        } catch (error) {
+            console.error("Error updating user: ", error);
+            throw new Error("Failed to update user");
+        }
+    }
+
+    //Removendo um perfil de um usuário
+    async removeUser(id: string) {
+        try {
+            await prisma.user.delete({
+                where: {id},
+            });
+            
+            return "User removed";
+        } catch (error) {
+            console.error("Error removing user: ", error);
+            throw new Error("Failed to remove user");
+        }
+    };
+}
