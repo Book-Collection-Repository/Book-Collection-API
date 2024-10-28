@@ -147,6 +147,38 @@ export class UserService {
         }
     }
 
+    //Incrementando os contadores de seguindo
+    async incrementFollowingCount(id: string) {
+        await prisma.user.update({
+            where: { id },
+            data: { followingCount: { increment: 1 } },
+        });
+    };
+
+    //Incrementeando os contadores de seguidores
+    async incrementFollowersCount(id: string) {
+        await prisma.user.update({
+            where: { id },
+            data: { followersCount: { increment: 1 } },
+        });
+    };
+
+    //Decremetando os contradores de seguindo
+    async decrementFollowingCount(id: string) {
+        await prisma.user.update({
+            where: { id },
+            data: { followingCount: { decrement: 1 } },
+        });
+    };
+
+    //Decrementeando os contadores de seguidores
+    async decrementFollowersCount(id: string) {
+        await prisma.user.update({
+            where: { id },
+            data: { followersCount: { decrement: 1 } },
+        });
+    };
+
     //Removendo um perfil de um usuário
     async removeUser(id: string) {
         try {
