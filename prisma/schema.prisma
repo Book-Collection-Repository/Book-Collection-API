@@ -54,6 +54,7 @@ model User {
   profileImage   String? @default("Unregistered profile picture")
   followersCount Int     @default(0) // Contador de seguidores
   followingCount Int     @default(0) // Contador de seguindo
+  version        Int     @default(0)
 
   //Relacionamentos
   messagesSent     Message[]      @relation("UserMessagesSent")
