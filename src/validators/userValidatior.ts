@@ -39,12 +39,16 @@ export const updateProfileSchema = z.object({
     profileName: z.string()
         .min(3, { message: 'ProfileName must be at least 3 characters long' })
         .max(30, { message: 'ProfileName must be at most 30 characters long' }),
+
+    version: z.number({ message: "The version of user is required" }),
 });
 
 //Validação para a edição da senha
 export const updatePasswordSchema = z.object({
     email: z.string()
         .email({ message: 'Please enter a valid email address' }),
+
+    version: z.number({ message: "The version of user is required" }),
 
     password: z.string()
         .min(6, { message: 'Password must be at least 6 characters long' }),

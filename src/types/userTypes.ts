@@ -6,6 +6,7 @@ export interface User {
     password: string;
     profileName: string;
     profileImage?: string;
+    version: number;
     followersCount: number;
     followingCount: number;
     createdAt: Date;
@@ -13,7 +14,7 @@ export interface User {
 }
 
 //Criando um tipo que será usado nas requisições
-export type CreateUserDTO = Omit<User, 'id' | 'followersCount' | 'followingCount' | 'createdAt' | 'updatedAt'>;
+export type CreateUserDTO = Omit<User, 'id' | 'version' | 'followersCount' | 'followingCount' | 'createdAt' | 'updatedAt'>;
 
 // Criando um tipo que será usado na requisição de autenticação
 export type AuthenticateUserDTO = {
@@ -26,6 +27,7 @@ export type UpdateProfileUserDTO =  {
     userName: string;
     email: string;
     profileName: string;
+    version: number;
 }
 
 //Criando um tipo que serár usado na requisição de edição de senha
@@ -33,4 +35,5 @@ export type UpdatePasswordUserDTO = {
     email: string;
     password: string;
     confirmPassword: string;
+    version: number;
 };

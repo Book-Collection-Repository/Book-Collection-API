@@ -180,12 +180,16 @@ export class UserController {
             const userExistWithID = await this.userService.getUserByID(idUser);
             if (!userExistWithID) return res.status(404).json({ error: "User not found with ID" });
 
+            // Verificação do bloqueio otimista
+            const lockCheck = await this.userService.lockedOptimistUser(idUser, dataUser.version);
+            if (!lockCheck.success) return res.status(lockCheck.status).json({ error: lockCheck.message });
+
             //Validar que não há nenhum outro usuário com essas informações
             const userExistUserWithInformations = await this.userService.validateUserInformationUpdate(dataUser.email, dataUser.userName, idUser);
             if (userExistUserWithInformations) return res.status(400).json({ error: userExistUserWithInformations });
 
             //Atualizando os dados do usuário
-            const updateUser = await this.userService.updateUser(dataUser, idUser);
+            const updateUser = await this.userService.updateUser({ ...dataUser, version: dataUser.version + 1 }, idUser);
 
             return res.status(200).json({ message: "Profile updated successfully", data: updateUser })
 
@@ -211,11 +215,15 @@ export class UserController {
             const userExistWithEmail = await this.userService.getUserByEmail(dataUser.email);
             if (!userExistWithEmail) return res.status(404).json({ error: "User with email not found" });
 
+            // Verificação do bloqueio otimista
+            const lockCheck = await this.userService.lockedOptimistUser(userExistWithEmail.id, dataUser.version);
+            if (!lockCheck.success) return res.status(lockCheck.status).json({ error: lockCheck.message });
+
             //Criptografando a senha
             const passwordHash = await hashPassword(dataUser.password);
 
             //Envia os dados para o service
-            const updateUser = await this.userService.updatePasswordUser({ ...dataUser, password: passwordHash });
+            const updateUser = await this.userService.updatePasswordUser({ ...dataUser, password: passwordHash});
 
             return res.status(200).json({ message: "Password update sucessfully", updadeUser: updateUser });
 
@@ -237,6 +245,9 @@ export class UserController {
             //Pegando o id do usuário
             const idUser = req.id_User;
 
+            //Pegando a versão do usuário
+            const {version} = req.body;
+
             //Pagando a imagem passada
             const requestImage = req.file as Express.Multer.File;
 
@@ -245,6 +256,11 @@ export class UserController {
 
             const userExistWithID = await this.userService.getUserByID(idUser);
             if (!userExistWithID) return res.status(404).json({ error: "User not found with ID" });
+
+            // Verificação do bloqueio otimista
+            if (version === null || version === undefined) return res.status(404).json({error: "Version is required"});
+            const lockCheck = await this.userService.lockedOptimistUser(idUser, parseInt(version));
+            if (!lockCheck.success) return res.status(lockCheck.status).json({ error: lockCheck.message });
 
             //Salvando no banco de dados
             const userUpdatedImage = await this.userService.updatePhotoUser(idUser, `images/${requestImage.filename}`);

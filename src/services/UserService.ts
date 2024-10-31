@@ -99,12 +99,23 @@ export class UserService {
         }
     };
 
+    // Bloqueia operação concorrente
+    async lockedOptimistUser(id: string, version: number) {
+        const user = await prisma.user.findUnique({
+            where: {id},
+        });
+
+        if (version !== user?.version) return { success: false, status: 400, message: "The user version is not compatible with the database version" }; 
+    
+        return { success: true, status: 200, message: "The user version compatible with the database version"};
+    }
+
     // Editando as informações de um usuário
     async updateUser(data: UpdateProfileUserDTO, id: string) {
         try {
             const user = await prisma.user.update({
                 where: {id},
-                data: {... data,}
+                data: { ... data, }
             });
             
             return user;
@@ -120,7 +131,10 @@ export class UserService {
         try {
             const user = await prisma.user.update({
                 where: {email: data.email},
-                data: {password: data.password}
+                data: {
+                    password: data.password,
+                    version: {increment: 1},
+                }
             });
             
             return user;
@@ -136,7 +150,10 @@ export class UserService {
         try {
             const user = await prisma.user.update({
                 where: {id},
-                data: {profileImage: fileName}
+                data: {
+                    profileImage: fileName,
+                    version: {increment: 1}
+                }
             });
             
             return user;
