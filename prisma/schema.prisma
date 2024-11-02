@@ -107,15 +107,18 @@ model Follow {
 //Entidade Book
 model Book {
   id             String  @id @default(uuid())
-  ISBN           String? @unique
+  ISBN_13        String? @unique
+  ISBN_10        String? @unique
   title          String  @unique
+  subTitle       String?
   coverImage     String
   summary        String?
   author         String
   publisher      String
+  publisheData   String
   quantityPages  Int
   mainGenre      String
-  secondaryGenre String
+  secondaryGenre String?
 
   //Relacionamentos
   collections    BookCollection[]
@@ -148,7 +151,7 @@ model BookCollection {
   addedAt      DateTime @default(now())
 
   // Relacionamentos
-  book       Book       @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  book       Book       @relation(fields: [bookId], references: [id])
   collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 
   // Chave primária composta
