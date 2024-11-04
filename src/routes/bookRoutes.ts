@@ -18,7 +18,7 @@ bookRoutes.get("/title/:title", bookController.getBooksInExternalApiForTitle.bin
 bookRoutes.get("/isbn/:isbn", bookController.getBooksInExternalApiForISBN.bind(bookController));
 bookRoutes.get("/genre/:genre", bookController.getBooksInExternalApiForGenre.bind(bookController));
 bookRoutes.get("/author/:author", bookController.getBooksInExternalApiForAuthor.bind(bookController));
-bookRoutes.post("/:isbn", authValidationToken, bookController.addtingBookInDataBase.bind(bookController));
+bookRoutes.post("/:idBook", authValidationToken, bookController.addtingBookInDataBase.bind(bookController));
 bookRoutes.delete("/:id", authValidationToken, bookController.removeBookInDataBase.bind(bookController));
 
 //Expontando as rotas
