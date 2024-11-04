@@ -42,6 +42,13 @@ enum CollectionStatus {
   CUSTOM
 }
 
+// Enumeração para definidir se leitura foi finalizada ou ainda está sendo realizada
+enum ReadingFinished {
+  DONE
+  READING
+  REREAD
+}
+
 // ========== MODELO DO BANCO DE DADOS =========
 
 //Entidade User
@@ -163,7 +170,7 @@ model BookCollection {
 model Avaliation {
   id              String   @id @default(uuid())
   content         String
-  evaluationGrade String
+  evaluationGrade Int
   createdAt       DateTime @default(now())
 
   // Relacionamento com o usuário que fez a avaliação
@@ -173,12 +180,17 @@ model Avaliation {
   // Relacionamento com o livro avaliado
   bookId String
   book   Book   @relation(fields: [bookId], references: [id])
+
+  // Restringe para que cada usuário possa avaliar um livro apenas uma vez
+  @@unique([userId, bookId])
 }
 
 //Entidade ReadingDiary
 model ReadingDiary {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
+  id                String          @id @default(uuid())
+  readingPercentage Int
+  readingFinished   ReadingFinished
+  createdAt         DateTime        @default(now())
 
   //Relacionamento com registros de diário
   readingDiaryRecords ReadingDiaryRecord[]
@@ -197,7 +209,7 @@ model ReadingDiaryRecord {
   id              String   @id @default(uuid())
   content         String
   pagesRead       Int
-  evaluationGrade String
+  evaluationGrade Int
   createdAt       DateTime @default(now())
 
   //Relacionamento com o diário de leitura

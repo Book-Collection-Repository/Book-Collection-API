@@ -7,6 +7,7 @@ import { followRoutes } from "./followRoutes";
 import { messageRoutes } from "./messageRoutes";
 import { bookRoutes } from "./bookRoutes";
 import { collectionRoutes } from "./collectionRoutes";
+import { avaliationRoutes } from "./avaliationRoutes";
 
 //Configurações
 const routes = Router();
@@ -16,5 +17,6 @@ routes.use("/follow", followRoutes);
 routes.use("/message", messageRoutes);
 routes.use("/book", bookRoutes);
 routes.use("/collection", collectionRoutes);
+routes.use("/avaliation", avaliationRoutes);
 
 export {routes};

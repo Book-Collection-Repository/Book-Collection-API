@@ -10,6 +10,9 @@ CREATE TYPE "DefaultType" AS ENUM ('REVIEWED', 'READING', 'WANT_TO_READ', 'READ'
 -- CreateEnum
 CREATE TYPE "CollectionStatus" AS ENUM ('DEFAULT', 'CUSTOM');
 
+-- CreateEnum
+CREATE TYPE "ReadingFinished" AS ENUM ('DONE', 'READING', 'REREAD');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
@@ -96,7 +99,7 @@ CREATE TABLE "BookCollection" (
 CREATE TABLE "Avaliation" (
     "id" TEXT NOT NULL,
     "content" TEXT NOT NULL,
-    "evaluationGrade" TEXT NOT NULL,
+    "evaluationGrade" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "userId" TEXT NOT NULL,
     "bookId" TEXT NOT NULL,
@@ -107,6 +110,8 @@ CREATE TABLE "Avaliation" (
 -- CreateTable
 CREATE TABLE "ReadingDiary" (
     "id" TEXT NOT NULL,
+    "readingPercentage" INTEGER NOT NULL,
+    "readingFinished" "ReadingFinished" NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "userId" TEXT NOT NULL,
     "bookId" TEXT NOT NULL,
@@ -119,7 +124,7 @@ CREATE TABLE "ReadingDiaryRecord" (
     "id" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "pagesRead" INTEGER NOT NULL,
-    "evaluationGrade" TEXT NOT NULL,
+    "evaluationGrade" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "readingDiaryId" TEXT NOT NULL,
 
@@ -167,6 +172,9 @@ CREATE UNIQUE INDEX "User_profileName_key" ON "User"("profileName");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Book_externalID_key" ON "Book"("externalID");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Avaliation_userId_bookId_key" ON "Avaliation"("userId", "bookId");
 
 -- AddForeignKey
 ALTER TABLE "Message" ADD CONSTRAINT "Message_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
