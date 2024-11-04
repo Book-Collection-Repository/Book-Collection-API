@@ -1,6 +1,7 @@
 //Definindo um interface para o tipo de livro
 export interface book {
     id: string;
+    externalID: string;
     ISBN_13?: string;
     ISBN_10?: string;
     title: string;
