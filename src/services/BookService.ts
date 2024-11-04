@@ -23,11 +23,20 @@ export class BookService {
         });
 
         return book;
-    }
+    };
+
+    //Método para listar um determinado livro pelo o id externo
+    async getBookInDataBaseWithExternalID(externalID: string) {
+        const book = await prisma.book.findUnique({
+            where: {externalID}
+        });
+
+        return book;
+    };
 
     //Método para listar livros presentes no banco de dados (pesquisa por título)
     async searchBooksInDataBaseForTitle(title: string) {
-        const book = await prisma.book.findUnique({
+        const book = await prisma.book.findMany({
             where: { title }
         });
 
@@ -46,6 +55,19 @@ export class BookService {
         });
 
         return book;
+    };
+
+    //Método para procurar na API GOOGLE BOOKS (pesquisa por id)
+    async searchBookInExternalApiForId(id: string) {
+        const bookData = await this.googleService.searchBookById(id);
+
+        // Valida se o livro foi encontrado
+        if (!bookData || bookData.error) return { success: false, message: "No book found for the provided ID", data: null };
+
+        // Adapta os dados para o formato CreateBookDTO
+        const adaptedBook = await this.adapterTypesDatas(bookData);
+
+        return { success: true, message: "Book found in the external API", data: adaptedBook };
     };
 
     //Método para procurar na API GOOGLE BOOKS (pesquisa por título)
@@ -74,12 +96,13 @@ export class BookService {
             return { success: false, message: "No books found for the provided ISBN", data: null };
         };
 
-        //Adaptando tipo de dado
-        const book = allBooks?.items[0];
-        const adaptedBook = await this.adapterTypesDatas(book);
+        // Adaptar todos os livros retornados
+        const adaptedBooks = await Promise.all(
+            allBooks.items.map((book: any) => this.adapterTypesDatas(book))
+        );
 
         //Retornando a resposta
-        return { success: true, message: "Books foun in the external API", data: adaptedBook };
+        return { success: true, message: "Books foun in the external API", data: adaptedBooks };
     };
 
     //Método para procurar na API GOOGLE BOOKS (pesquisa por Gênero)
@@ -150,6 +173,7 @@ export class BookService {
     // Método para converter os dados vindo da API Externa Para o tipo de dado
     async adapterTypesDatas(item: any): Promise<CreateBookDTO> {
         const book: CreateBookDTO = {
+            externalID: item.id,
             author: item.volumeInfo.authors && item.volumeInfo.authors.length > 0
                 ? item.volumeInfo.authors.join(' | ')
                 : 'Unknown Author',
@@ -174,6 +198,4 @@ export class BookService {
 
         return book;
     }
-
-
-}
+};

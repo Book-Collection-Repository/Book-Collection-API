@@ -107,9 +107,10 @@ model Follow {
 //Entidade Book
 model Book {
   id             String  @id @default(uuid())
-  ISBN_13        String? @unique
-  ISBN_10        String? @unique
-  title          String  @unique
+  externalID     String  @unique
+  ISBN_13        String?
+  ISBN_10        String?
+  title          String
   subTitle       String?
   coverImage     String
   summary        String?
@@ -171,7 +172,7 @@ model Avaliation {
 
   // Relacionamento com o livro avaliado
   bookId String
-  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  book   Book   @relation(fields: [bookId], references: [id])
 }
 
 //Entidade ReadingDiary
@@ -188,7 +189,7 @@ model ReadingDiary {
 
   // Relacionamento com o livro avaliado
   bookId String
-  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  book   Book   @relation(fields: [bookId], references: [id])
 }
 
 //Entidade ReadingDiaryRecord
