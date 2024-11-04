@@ -34,7 +34,7 @@ export class BookController {
         try {
             const isbn = req.params.isbn;
 
-            const getBooks = await this.bookService.searchBooksInDataBaseForISBN(isbn);
+            const getBooks = await this.bookService.searchBookInExternalApiForId(isbn);
 
             if (!getBooks) return res.status(404).json({ message: "Book not found" });
 
@@ -116,14 +116,14 @@ export class BookController {
     //Método para adicionar livro ao banco de dados
     async addtingBookInDataBase(req: Request, res: Response): Promise<Response> {
         try {
-            const ISBN = req.params.isbn;//Pegando o ISBN
+            const idBook = req.params.idBook;//Pegando o ISBN
 
             //Validando que o livro jão não fora criado
-            const bookExistInDataBase = await this.bookService.searchBooksInDataBaseForISBN(ISBN);
-            if (bookExistInDataBase.length > 0) return res.status(400).json({ message: "Book exists in database" });
+            const bookExistInDataBase = await this.bookService.getBookInDataBaseWithExternalID(idBook);
+            if (bookExistInDataBase) return res.status(400).json({ message: "Book exists in database" });
 
             //Busca o livro na API externa
-            const externalBookResponse = await this.bookService.searchBookInExternalApiForISBN(ISBN);
+            const externalBookResponse = await this.bookService.searchBookInExternalApiForId(idBook);
             if (!externalBookResponse.success || externalBookResponse.data === null) return res.status(404).json({ message: externalBookResponse.message });
 
             // Adicionar livro ao banco de dados
