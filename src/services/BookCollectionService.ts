@@ -1,6 +1,9 @@
 //Importações
 import { prisma } from "./prisma";
 
+//Types
+import { DefaultType } from "@prisma/client";
+
 //Class
 export class BookCollectionService {  
 
@@ -13,7 +16,7 @@ export class BookCollectionService {
         return booksCollection;
     };
 
-    //Método para adicionar um livro na coleção
+    //Método para adicionar um livro na coleção personalizada
     async addtingBookInCollection (collectionId: string, bookId: string) {
         try {
             //Verificando se o livro já está presente na coleção
@@ -32,6 +35,26 @@ export class BookCollectionService {
             console.error("Error addting book in collection: ", error);
             return { success: false, status: 400, message: "There was a problem, default collection not created" };
         }
+    };
+
+    //Método para adicionar um livro na coleções padrão
+    async addtingBookInDefaultCollection (bookId: string, type: DefaultType) {
+        try {
+            const collection = await prisma.collection.findUnique({
+                where: { defaultType: type}
+            });
+
+            if (!collection) return {success: false, status: 400, message: "Collection not found"};
+
+            //Chama o método de de adiciona um livro
+            const addtingBook = await this.addtingBookInCollection(collection.id, bookId);
+            
+            //Retorna a resposta do método
+            return {success: addtingBook.success, status: addtingBook.status, message: addtingBook.message, data: addtingBook.data};
+        } catch (error) {
+            console.error("Error addting book in collection: ", error);
+            return { success: false, status: 400, message: "There was a problem, default collection not created" };
+        } 
     };
 
     //Método para remover um livro da coleção

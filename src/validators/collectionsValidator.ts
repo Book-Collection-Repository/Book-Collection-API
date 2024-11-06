@@ -1,6 +1,9 @@
 //Importações
 import {z, ZodError} from "zod";
 
+//Types
+import { EntityVisibility } from "@prisma/client";
+
 //Definindo tipo de validação para a criação de coleção personalizada
 export const createCustomCollectionSchema = z.object({
     title: z.string()
@@ -9,5 +12,7 @@ export const createCustomCollectionSchema = z.object({
     
     description: z.string().optional(),
 
-    visibility: z.boolean(),
+    visibility: z.nativeEnum(EntityVisibility, {
+        errorMap: () => ({ message: "Visibility must be either PUBLIC or PRIVATE" })
+    }),
 });

@@ -29,7 +29,8 @@ export class CollectionService {
     // Método para listar dados de uma coleção
     async listDataFromCollection(id: string) {
         const data = await prisma.collection.findUnique({
-            where: { id }
+            where: { id },
+            include: {books: true}
         });
 
         if (!data) return { success: false, status: 404, message: "Collection with ID not found", data: null };
@@ -49,7 +50,7 @@ export class CollectionService {
                 collectionStatus: CollectionStatus.DEFAULT,
                 defaultType,
                 title: this.getTitleForDefaultType(defaultType), // Função auxiliar para definir título
-                visibility: true,
+                visibility: "PUBLIC",
                 description: this.getDescriptionForDefaultType(defaultType),
                 userId,
             }));
