@@ -8,6 +8,7 @@ import { messageRoutes } from "./messageRoutes";
 import { bookRoutes } from "./bookRoutes";
 import { collectionRoutes } from "./collectionRoutes";
 import { avaliationRoutes } from "./avaliationRoutes";
+import { diaryRoutes } from "./readingDiaryRoutes";
 
 //Configurações
 const routes = Router();
@@ -18,5 +19,6 @@ routes.use("/message", messageRoutes);
 routes.use("/book", bookRoutes);
 routes.use("/collection", collectionRoutes);
 routes.use("/avaliation", avaliationRoutes);
+routes.use("/diary", diaryRoutes);
 
 export {routes};
