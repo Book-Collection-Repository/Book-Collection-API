@@ -7,6 +7,7 @@ import { ZodError } from "zod";
 import { AvaliationService } from "../services/AvaliationsService";
 import { UserService } from "../services/UserService";
 import { BookService } from "../services/BookService";
+import { BookCollectionService } from "../services/BookCollectionService";
 
 //Types
 import { CreateAvalaitonDTO } from "../types/AvaliationTypes";
@@ -22,11 +23,13 @@ export class AvaliationController {
     private avaliationService: AvaliationService;
     private userService: UserService;
     private bookService: BookService;
+    private bookCollectionService: BookCollectionService;
 
     constructor () {
         this.avaliationService = new AvaliationService();
         this.userService = new UserService();
         this.bookService = new BookService();
+        this.bookCollectionService = new BookCollectionService();
     };
 
     //Requisição para listar as avaliações de um livro
@@ -100,6 +103,10 @@ export class AvaliationController {
             //Criando avaliação
             const createAvaliation = await this.avaliationService.createAvaliationForBook({...avaliation, userId: idUser, bookId: idBook});
             if (!createAvaliation.success) return res.status(400).json({message: createAvaliation.message});
+
+            //Adicionando o livro na coleção de livros avaliados
+            const addtingBookInCollection = await this.bookCollectionService.addtingBookInDefaultCollection(idBook, "REVIEWED");
+            if (!addtingBookInCollection.success) return res.status(addtingBookInCollection.status).json({message: addtingBookInCollection.message});
 
             //Retornando a avaliação
             return res.status(200).json({message: createAvaliation.message, data: createAvaliation.data});

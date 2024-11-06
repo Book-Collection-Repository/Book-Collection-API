@@ -1,5 +1,5 @@
 //Importações
-import { DefaultType, CollectionStatus } from "@prisma/client";
+import { DefaultType, CollectionStatus, EntityVisibility } from "@prisma/client";
 
 //Definindo um tipo do dado
 export interface Collection {
@@ -8,7 +8,7 @@ export interface Collection {
     defaultType: DefaultType;
     description?: string;
     title: string;
-    visibility: boolean;
+    visibility: EntityVisibility;
     createdAt: Date;
     userId: string;
 };
