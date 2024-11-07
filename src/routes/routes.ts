@@ -9,6 +9,7 @@ import { bookRoutes } from "./bookRoutes";
 import { collectionRoutes } from "./collectionRoutes";
 import { avaliationRoutes } from "./avaliationRoutes";
 import { diaryRoutes } from "./readingDiaryRoutes";
+import { publicationRoutes } from "./publicationRoutes";
 
 //Configurações
 const routes = Router();
@@ -20,5 +21,6 @@ routes.use("/book", bookRoutes);
 routes.use("/collection", collectionRoutes);
 routes.use("/avaliation", avaliationRoutes);
 routes.use("/diary", diaryRoutes);
+routes.use("/publication", publicationRoutes);
 
 export {routes};

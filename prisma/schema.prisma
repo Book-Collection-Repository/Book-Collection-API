@@ -258,7 +258,6 @@ model Comment {
 
 //Entidade Like
 model Like {
-  id        String   @id @default(uuid())
   createdAt DateTime @default(now())
 
   //Relacionamento com o usuário que comentou a publicação
@@ -268,4 +267,7 @@ model Like {
   //Relacionamento com  a publicação
   publicationId String
   publication   Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+
+  // Chave primária composta
+  @@id([publicationId, userId])
 }
