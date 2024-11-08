@@ -37,9 +37,6 @@ export class MessageController {
             if (!validate(receiverId)) return res.status(400).json({ error: "Invalid ID format" });
 
             //Validando que o usuário existe
-            const userExistWithID = await this.userService.getUserByID(idUser);
-            if (!userExistWithID) return res.status(404).json({ error: "User with ID not found" });
-
             const reciverExistWithID = await this.userService.getUserByID(receiverId);
             if (!reciverExistWithID) return res.status(404).json({ error: "Reciver with ID not found" });
 
@@ -52,7 +49,7 @@ export class MessageController {
             console.error("Error return message: ", error);
             return res.status(500).json({ error: "Internal Server Error" });
         }
-    }
+    };
 
     //Método para listar as conversas recentes
     async findChatsRecents(req: Request, res: Response): Promise<Response> {
@@ -60,9 +57,6 @@ export class MessageController {
             const idUser = req.id_User;
 
             //Validando que o usuário existe
-            const userExistWithID = await this.userService.getUserByID(idUser);
-            if (!userExistWithID) return res.status(404).json({error: "User with ID not found"});
-
             const allMessages = await this.messageService.getUsersWithMessagesRecent(idUser);
 
             return res.status(200).json({allMessages: allMessages});
@@ -71,7 +65,7 @@ export class MessageController {
             console.error("Error return message: ", error);
             return res.status(500).json({ error: "Internal Server Error" });
         }
-    }
+    };
 
     //Método para criar e enviar mensagens
     async createMessages(req: Request, res: Response): Promise<Response> {
@@ -81,9 +75,6 @@ export class MessageController {
             const receiverId = req.params.receiverId;
 
             //Validando que o usuário existe
-            const userExistWithID = await this.userService.getUserByID(idUser);
-            if (!userExistWithID) return res.status(404).json({ error: "User with ID not found" });
-
             const reciverExistWithID = await this.userService.getUserByID(receiverId);
             if (!reciverExistWithID) return res.status(404).json({ error: "Reciver with ID not found" });
 
@@ -101,7 +92,7 @@ export class MessageController {
             console.error("Error return message: ", error);
             return res.status(500).json({ error: "Internal Server Error" });
         }
-    }
+    };
 
     //Método para deletar mensagens
     async removeMessages(req: Request, res: Response): Promise<Response> {
@@ -124,5 +115,5 @@ export class MessageController {
             console.error("Error return message: ", error);
             return res.status(500).json({ error: "Internal Server Error" });
         }
-    }
+    };
 }
