@@ -6,15 +6,41 @@ import { CreateBookDTO } from "../types/bookTypes";
 
 //Services
 import { GoogleBookService } from "./GoogleBookServices";
+import { GoogleGeminiService } from "./GoogleGeminiServices";
 
 //Class
 export class BookService {
 
     private googleService: GoogleBookService;
+    private geminiService: GoogleGeminiService;
 
     constructor() {
         this.googleService = new GoogleBookService();
-    }
+        this.geminiService = new GoogleGeminiService();
+    };
+
+    //Método para criar uma lista aleatória de livros
+    async getListRandomBooksForGenres() {
+        //Busca a query gerada aleatóriamente
+        let query = await this.geminiService.determineRandomGenderQuery();
+        if (!query.sucess) query.message = "bestseller+classic+literature+contemporary+fiction";
+        else query.message = `bestseller+literature+contemporary+${query.message}`;
+
+        //Gerando a lista de livros com base na query
+        const data = await this.googleService.listFetchRandomBooks(query.message);
+        if (!data || data.error) return { success: false, message: "List is not created" };
+
+        // Mapeia os dados para extrair somente os campos necessários
+        const books = data.items.map((item: any) => ({
+            title: item.volumeInfo.title,
+            subtitle: item.volumeInfo.subtitle || null, // Usa null se não houver subtítulo
+            image: item.volumeInfo.imageLinks?.thumbnail || null, // Usa null se não houver imagem
+            genres: item.volumeInfo.categories || []
+        }));
+
+        //Retorno oresultado
+        return { success: true, message: books };
+    };
 
     //Método para listar se um determinado livro existe
     async getBookInDataBaseWithID(id: string) {
@@ -28,7 +54,7 @@ export class BookService {
     //Método para listar um determinado livro pelo o id externo
     async getBookInDataBaseWithExternalID(externalID: string) {
         const book = await prisma.book.findUnique({
-            where: {externalID}
+            where: { externalID }
         });
 
         return book;
@@ -191,11 +217,11 @@ export class BookService {
                 : 'Unknown ISBN',
             secondaryGenre: item.volumeInfo.categories && item.volumeInfo.categories.length > 1
                 ? item.volumeInfo.categories[1]
-                : undefined, // Gênero secundário, se existir
-            subTitle: item.volumeInfo.subtitle || undefined,
-            summary: item.volumeInfo.description || 'Unknown Summary', // Resumo
+                : 'Unknown secondary genre', // Gênero secundário, se existir
+            subTitle: item.volumeInfo.subtitle || 'Unknown subtitle',
+            summary: item.volumeInfo.description || (await this.geminiService.createBookSummary(item.volumeInfo.title, item.volumeInfo.authors?.join(' | ') || 'Unknown Author')).message, // Resumo
         };
 
         return book;
-    }
+    };
 };
