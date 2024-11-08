@@ -60,14 +60,12 @@ export class FollowController {
             const idUserFollowed = req.params.idFriend;
 
             //Validando que o usuário existe
-            if (!validate(idUserFollowed)) return res.status(400).json({error: "Invalid ID format"});
-
+            if (!validate(idUserFollowed) || idUserFollowed === null || idUserFollowed === undefined) return res.status(400).json({error: "Invalid ID format"});
             const userExistWithID = await this.userService.getUserByID(idUserFollowed);
             if (!userExistWithID) return res.status(404).json({error: "User with ID not found"});
 
             //Criando a relação entre eles
             const createFollowRelation = await this.followService.followUser(idUser, idUserFollowed);
-            
             if (!createFollowRelation.success) return res.status(createFollowRelation.status).json({error: createFollowRelation.message});
 
             return res.status(createFollowRelation.status).json({message: `User ${idUser} following ${idUserFollowed} sucessesful`, follow: createFollowRelation.message});
@@ -87,14 +85,12 @@ export class FollowController {
             const idUserFollowed = req.params.idFriend;
 
             //Validando que o usuário existe
-            if (!validate(idUserFollowed)) return res.status(400).json({error: "Invalid ID format"});
-
+            if (!validate(idUserFollowed) || idUserFollowed === null || idUserFollowed === undefined) return res.status(400).json({error: "Invalid ID format"});
             const userExistWithID = await this.userService.getUserByID(idUserFollowed);
             if (!userExistWithID) return res.status(404).json({error: "User with ID not found"});
 
             //Removendo a relação
             const removeFollowRelation = await this.followService.unfollowUser(idUser, idUserFollowed);
-
             if (!removeFollowRelation.success) return res.status(removeFollowRelation.status).json({error: removeFollowRelation.message})
 
             return res.status(removeFollowRelation.status).json({message: `User ${idUser} unfollowing ${idUserFollowed} sucessesful`, follow: removeFollowRelation.message});
