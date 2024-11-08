@@ -19,6 +19,23 @@ export class GoogleBookService {
         this.googleApiKey = keyGoogleApi;
     };
 
+    //Método para gerar um lista de livros aleatórios
+    async listFetchRandomBooks (query: string) {
+        try {
+            const response = await axios.get(`${this.googleApiUrl}/volumes`, {
+                params: {
+                    q: query,
+                    key: this.googleApiKey,
+                    maxResults: 20,
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.log("Error in search book: ", error);
+            throw new Error("Error in search book for title");
+        }
+    };
+
     //Método para procurar livros por título
     async searchBookForTitle (title: string) {
         try {
@@ -58,7 +75,8 @@ export class GoogleBookService {
             const response = await axios.get(`${this.googleApiUrl}/volumes`, {
                 params: {
                     q: `subject:${genre}`,
-                    key: this.googleApiKey
+                    key: this.googleApiKey,
+                    langRestrict: "pt"
                 }
             });
             return response.data;
