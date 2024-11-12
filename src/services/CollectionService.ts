@@ -19,22 +19,34 @@ export class CollectionService {
     //Método para listar as coleções de um usuário
     async listCollectionsOfUser(userId: string) {
         const data = await prisma.collection.findMany({
-            where: {userId},
-            include: {books: true}
+            where: { userId },
+            include: { books: true }
         });
 
         return data;
-    }
+    };
 
-    // Método para listar dados de uma coleção
-    async listDataFromCollection(id: string) {
+    //Método para saber se um coleção existe
+    async getFindExistsCollection(id: string) {
         const data = await prisma.collection.findUnique({
-            where: { id },
-            include: {books: true}
+            where: {id}
         });
 
+        return data;
+    };
+
+    // Método para listar dados de uma coleção
+    async listDataFromCollection(id: string, userId: string) {
+        //Busacando dados
+        const data = await prisma.collection.findUnique({
+            where: { id },
+            include: { books: true }
+        });
         if (!data) return { success: false, status: 404, message: "Collection with ID not found", data: null };
 
+        // Verifica se a coleção é privada e se o usuário requisitante é o proprietário
+        if (data.visibility === 'PRIVATE' && data.userId !== userId) return { success: false, status: 403, message: "Access denied to this collection", data: null };
+   
         return { success: true, status: 200, message: "Collection exist", data: data };
     };
 
