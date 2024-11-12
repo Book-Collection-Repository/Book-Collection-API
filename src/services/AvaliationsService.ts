@@ -18,6 +18,15 @@ export class AvaliationService {
         return avaliationsBook;
     };
 
+    //Método para listar as avaliações de um usuário
+    async findAvaliationsOfUser (userId: string) {
+        const avaliationsUser = await prisma.avaliation.findMany({
+            where: {userId}
+        });
+
+        return avaliationsUser;
+    };
+
     //Método para listar uma avaliação
     async findAvaliaiton (id: string) {
         const avaliation = await prisma.avaliation.findUnique({
