@@ -1,48 +1,37 @@
 //Importações
 import { Request, Response } from "express";
-import { validate } from "uuid";
 
 //Types
-import { CustomCollectionDTO } from "../types/collectionTypes";
+import { CreateBookDTO } from "../types/bookTypes";
 
 //Services
 import { CollectionService } from "../services/CollectionService";
-import { UserService } from "../services/UserService";
 import { BookService } from "../services/BookService";
 import { BookCollectionService } from "../services/BookCollectionService";
 
 //Class
 export class BookCollectionController {
     private collectionService: CollectionService;
-    private userService: UserService;
     private bookService: BookService;
     private bookCollectionService: BookCollectionService;
 
     constructor() {
         this.collectionService = new CollectionService();
-        this.userService = new UserService();
         this.bookService = new BookService();
         this.bookCollectionService = new BookCollectionService();
-    }
+    };
 
     //Requisição para listar todos os livros de uma coleção
     async getListBooksInCollection(req: Request, res: Response): Promise<Response> {
         try {
             const idCollection = req.params.idCollection;
 
-            //Validando que o id é válido
-            if (!validate(idCollection)) return res.status(400).json({ error: "Invalid ID format" });
-
-            //Validandando que a coleção existe
-            const existCollectionWithID = await this.collectionService.listDataFromCollection(idCollection);
-            if (!existCollectionWithID.success) return res.status(existCollectionWithID.status).json({ message: existCollectionWithID.message });
-
             //Procurando os livros da coleção
             const booksInCollection = await this.bookCollectionService.listBookOfCollection(idCollection);
             if (!booksInCollection) return res.status(400).json({ message: "Collection does not yet have a book" });
 
             //Retornando os livros da coleção
-            return res.status(200).json({ collection: existCollectionWithID, books: booksInCollection });
+            return res.status(200).json({ books: booksInCollection });
         } catch (error) {
             console.error("Error return books in the collection: ", error);
             return res.status(500).json({ error: "Internal Server Error" });
@@ -54,26 +43,17 @@ export class BookCollectionController {
         try {
             const idUser = req.id_User;
             const idCollection = req.params.idCollection;
-            const idBook = req.params.idBook;
+            const idBook = req.params.idBook; //Id da API Externa
 
-            //Validando que o id é válido
-            if (!validate(idCollection) || !validate(idBook)) return res.status(400).json({ error: "Invalid ID format" });
+            //Verificando e pesquisando o livro na API externa
+            const dataBook = await this.bookService.searchBookInExternalApiForId(idBook); //Pesquisando na API externa
+            if (!dataBook.success || dataBook.data === null || dataBook.data === undefined) return res.status(400).json({ message: dataBook.message });
 
-            //Validandando que a coleção existe
-            const existCollectionWithID = await this.collectionService.listDataFromCollection(idCollection);
-            if (!existCollectionWithID.success) return res.status(existCollectionWithID.status).json({ message: existCollectionWithID.message });
+            // Obtém ou cria o livro no banco de dados
+            const bookId = await this.findOrCreateBookInDatabase(dataBook.data, idBook);
 
-            //Validando que o usuário existe e é o responsável pela a coleção
-            const userExistWithID = await this.userService.getUserByID(idUser);
-            const userIsResponsibleForCollection = await this.collectionService.getUserResponsibleForCollection(idCollection, idUser);
-            if (!userExistWithID || !userIsResponsibleForCollection) return res.status(400).json({error: "User not found OR user not responsible for collection"});
-
-            //Validando que o livro existe
-            const existBookWithIDInDataBase = await this.bookService.getBookInDataBaseWithID(idBook);
-            if (!existBookWithIDInDataBase) return res.status(404).json({ message: "Book with ID not found" });
-
-            //Adicionando o livros aa coleção
-            const addBookInCollection = await this.bookCollectionService.addtingBookInCollection(idCollection, idBook);
+            //Adicionando o livro na coleção
+            const addBookInCollection = await this.bookCollectionService.addtingBookInCollection(idCollection, bookId, idUser);
             if (!addBookInCollection.success) return res.status(addBookInCollection.status).json({ message: addBookInCollection.message });
 
             //Retornando os livros da coleção
@@ -91,21 +71,9 @@ export class BookCollectionController {
             const idCollection = req.params.idCollection;
             const idBook = req.params.idBook;
 
-            //Validando que o id é válido
-            if (!validate(idCollection) || !validate(idBook)) return res.status(400).json({ error: "Invalid ID format" });
-
-            //Validandando que a coleção existe
-            const existCollectionWithID = await this.collectionService.listDataFromCollection(idCollection);
-            if (!existCollectionWithID.success) return res.status(existCollectionWithID.status).json({ message: existCollectionWithID.message });
-
-            //Validando que o usuário existe e é o responsável pela a coleção
-            const userExistWithID = await this.userService.getUserByID(idUser);
+            //Validando que o usuário é o responsável pela a coleção
             const userIsResponsibleForCollection = await this.collectionService.getUserResponsibleForCollection(idCollection, idUser);
-            if (!userExistWithID || !userIsResponsibleForCollection) return res.status(400).json({error: "User not found OR user not responsible for collection"});
-
-            //Validando que o livro existe
-            const existBookWithIDInDataBase = await this.bookService.getBookInDataBaseWithID(idBook);
-            if (!existBookWithIDInDataBase) return res.status(404).json({ message: "Book with ID not found" });
+            if (!userIsResponsibleForCollection) return res.status(400).json({ error: "User not found OR user not responsible for collection" });
 
             //Adicionando o livros aa coleção
             const removeBookInCollection = await this.bookCollectionService.removingBookInCollection(idCollection, idBook);
@@ -117,5 +85,19 @@ export class BookCollectionController {
             console.error("Error return books in the collection: ", error);
             return res.status(500).json({ error: "Internal Server Error" });
         }
+    };
+
+    // Função para encontrar ou criar o livro no banco de dados
+    private async findOrCreateBookInDatabase(bookData: CreateBookDTO, idBook: string): Promise<string> {
+        //Validando que o livro já esteja armazenado no sistema
+        const existingBook = await this.bookService.getBookInDataBaseWithExternalID(idBook);
+        if (existingBook) return existingBook.id;
+
+        //Adicionando o livro no sistema
+        const newBook = await this.bookService.addtingBookInDataBase(bookData);
+        if (!newBook.success || !newBook.data) throw new Error("Failed to add book to the database");
+
+        //Retornando o id do livro caso o livro esteja no banco de dados
+        return newBook.data.id;
     };
 }
