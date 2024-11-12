@@ -73,10 +73,16 @@ export class BookCollectionService {
             });
             if (!collection) return { success: false, status: 400, message: "Collection not found" };
 
-            //Chama o método de de adiciona um livro
+            // Verificando se o livro já está na coleção
+            const isBookInCollection = await this.CheckingIfBookIsStoredTheCollection(collection.id, bookId);
+            if (isBookInCollection) {
+                return { success: true, message: "Book already in the collection" };
+            }
+
+            // Chamando o método para adicionar o livro, pois ele não está na coleção
             const addtingBook = await this.addtingBookInCollection(collection.id, bookId, userId);
 
-            //Retorna a resposta do método
+            // Retornando a resposta do método de adição
             return { success: addtingBook.success, status: addtingBook.status, message: addtingBook.message, data: addtingBook.data };
         } catch (error) {
             console.error("Error addting book in collection: ", error);
@@ -145,7 +151,7 @@ export class BookCollectionService {
         await this.redisClientService.saveUserPreferredAuthorsForCollection(userId, collectionId, topAuthors); // Salva autores
 
         // Retorna o resultado com os gêneros e autores mais frequentes
-        return { success: true, message: "Top genres and authors retrieved successfully"};
+        return { success: true, message: "Top genres and authors retrieved successfully" };
     };
 
     //Função para identificar os gêneros mais presentes na coleção geral de um usuário
@@ -162,7 +168,7 @@ export class BookCollectionService {
             const cachedGenres = await this.redisClientService.getUserPreferredGenresForCollections(userId, collection.id);
             if (cachedGenres && cachedGenres.length > 0) {
                 allGenres.push(...cachedGenres); // Agrega os gêneros da coleção
-            }else{ continue;}
+            } else { continue; }
         }
 
         if (allGenres.length === 0) return { success: false, message: "No genres found in user's collections" };
