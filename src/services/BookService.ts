@@ -170,11 +170,12 @@ export class BookService {
     //Método para adicionar um livro no banco de dados
     async addtingBookInDataBase(book: CreateBookDTO) {
         try {
+            //Adiciona o livro
             const createBook = await prisma.book.create({
                 data: { ...book }
-            })
+            });
 
-            return createBook;
+            return {success: true, message: "Book adding in database", data: createBook}
         } catch (error) {
             console.error("Error in creating book: ", error);
             throw new Error("Error in creating book");
