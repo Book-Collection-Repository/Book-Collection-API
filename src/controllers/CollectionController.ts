@@ -1,13 +1,11 @@
 //Importações
 import { Request, Response } from "express";
-import { validate } from "uuid";
 
 //Types
 import { CustomCollectionDTO } from "../types/collectionTypes";
 
 //Services
 import { CollectionService } from "../services/CollectionService";
-import { UserService } from "../services/UserService";
 
 //Validators
 import { createCustomCollectionSchema } from "../validators/collectionsValidator";
@@ -17,11 +15,9 @@ import { handleZodError } from "../utils/errorHandler";
 //Class
 export class CollectionController {
     private collectionService: CollectionService;
-    private userService: UserService;
 
     constructor() {
         this.collectionService = new CollectionService();
-        this.userService = new UserService();
     }
 
     //Método para listar os dados de um coleção
@@ -29,10 +25,6 @@ export class CollectionController {
         try {
             //Pegando id do usuário
             const idUser = req.id_User;
-
-            //Validando que o usuário existe
-            const userExistWithID = await this.userService.getUserByID(idUser);
-            if (!userExistWithID) return res.status(404).json({ error: "User not found" });
 
             //Procurando collection
             const collection = await this.collectionService.listCollectionsOfUser(idUser);
@@ -48,13 +40,11 @@ export class CollectionController {
     async getListDataFromCollection(req: Request, res: Response): Promise<Response> {
         try {
             //Pegando id da coleção
+            const idUser = req.id_User;
             const idCollection = req.params.idCollection;
 
-            //Validação de id
-            if (!validate(idCollection)) return res.status(400).json({ error: "Invalid ID format" });
-
             //Procurando collection
-            const collection = await this.collectionService.listDataFromCollection(idCollection);
+            const collection = await this.collectionService.listDataFromCollection(idCollection, idUser);
             if (!collection.success || collection.data === null) return res.status(collection.status).json({ message: collection.message });
 
             return res.status(collection.status).json({ message: collection.message, collection: collection.data });
@@ -68,10 +58,6 @@ export class CollectionController {
     async createDefaultCollections(req: Request, res: Response): Promise<Response> {
         try {
             const idUser = req.id_User;
-
-            //Validando que o usuário existe
-            const userExistWithID = await this.userService.getUserByID(idUser);
-            if (!userExistWithID) return res.status(404).json({ error: "User not found" });
 
             //Criando coleções padrões para o usuário
             const defaultCollection = await this.collectionService.createDefaultCollections(idUser);
@@ -90,10 +76,6 @@ export class CollectionController {
         try {
             const idUser = req.id_User;
             const collection: CustomCollectionDTO = createCustomCollectionSchema.parse(req.body);
-
-            //Validando que o usuário existe
-            const userExistWithID = await this.userService.getUserByID(idUser);
-            if (!userExistWithID) return res.status(404).json({ error: "User not found" });
 
             //Criando coleção
             const createCollection = await this.collectionService.createCustomCollection(collection, idUser);
@@ -120,14 +102,6 @@ export class CollectionController {
             const idCollection = req.params.idCollection;
             const collection: CustomCollectionDTO = createCustomCollectionSchema.parse(req.body);
 
-            //Validando que o id é válido
-            const collectionExistWithID = await this.collectionService.listDataFromCollection(idCollection);
-            if (!validate(idCollection) || !collectionExistWithID) return res.status(404).json({ error: "Invalid ID format or Collectio not found" });
-
-            //Validando que o usuário existe
-            const userExistWithID = await this.userService.getUserByID(idUser);
-            if (!userExistWithID) return res.status(404).json({ error: "User not found" });
-
             //Editando coleção
             const updatedCollection = await this.collectionService.updateCustomCollection(idCollection, idUser, collection);
             if (!updatedCollection.success) return res.status(updatedCollection.status).json({message: updatedCollection.message});
@@ -143,21 +117,13 @@ export class CollectionController {
             console.error("Error return collection: ", error);
             return res.status(500).json({ error: "Internal Server Error" });
         }
-    }
+    };
 
     //Método para remover uma coleção personalizada
     async deleteCutomCollection(req: Request, res: Response): Promise<Response> {
         try {
             const idUser = req.id_User;
             const idCollection = req.params.idCollection;
-
-            //Validando que o id é válido
-            const collectionExistWithID = await this.collectionService.listDataFromCollection(idCollection);
-            if (!validate(idCollection) || !collectionExistWithID) return res.status(404).json({ error: "Invalid ID format or Collectio not found" });
-
-            //Validando que o usuário existe
-            const userExistWithID = await this.userService.getUserByID(idUser);
-            if (!userExistWithID) return res.status(404).json({ error: "User not found" });
 
             //Removendo coleção
             const removedCollection = await this.collectionService.removeCustomCollection(idCollection, idUser);
@@ -169,6 +135,5 @@ export class CollectionController {
             console.error("Error return collection: ", error);
             return res.status(500).json({ error: "Internal Server Error" });
         }
-    }
-
+    };
 };
