@@ -142,7 +142,7 @@ export class BookController {
     //Método para adicionar livro ao banco de dados
     async addtingBookInDataBase(req: Request, res: Response): Promise<Response> {
         try {
-            const idBook = req.params.idBook;//Pegando o ISBN
+            const idBook = req.params.idBook;//Pegando o id externo
 
             //Validando que o livro jão não fora criado
             const bookExistInDataBase = await this.bookService.getBookInDataBaseWithExternalID(idBook);
