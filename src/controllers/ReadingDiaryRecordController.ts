@@ -13,6 +13,7 @@ import { createRecordSchema } from "../validators/recordsDiaryValidator";
 
 //Utils
 import { handleZodError } from "../utils/errorHandler";
+import { validate } from "uuid";
 
 //Class
 export class ReadingDiaryRecordController {
@@ -29,9 +30,9 @@ export class ReadingDiaryRecordController {
 
             //Realizando a busca
             const dataRecords = await this.readingDiaryRecordService.findListRecordsOfReadingDiary(idDiary);
-            
+
             //Retornando
-            return res.status(200).json({message: "Reading return datas records", data: dataRecords});
+            return res.status(200).json({ message: "Reading return datas records", data: dataRecords });
         } catch (error) {
             // Caso seja um erro desconhecido, retornar erro genérico
             console.error("Error return records of Reading Diary: ", error);
@@ -44,11 +45,17 @@ export class ReadingDiaryRecordController {
         try {
             const idRecord = req.params.idRecord; //Pegando o id do registro
 
+            //Verificando se o id do diário foi fornecido
+            if (!idRecord || idRecord === undefined || idRecord === null) return res.status(401).json({ message: "ID of record reading book not informed" });
+
+            //Validando que o id é válido
+            if (!validate(idRecord)) return res.status(401).json({ message: "Invalid format ID" });
+
             //Realizando a busca
             const dataRecords = await this.readingDiaryRecordService.findDataRecordOfReadingDiary(idRecord);
-            
+
             //Retornando
-            return res.status(200).json({message: "Reading return data record", data: dataRecords});
+            return res.status(200).json({ message: "Reading return data record", data: dataRecords });
         } catch (error) {
             // Caso seja um erro desconhecido, retornar erro genérico
             console.error("Error return records of Reading Diary: ", error);
@@ -64,10 +71,10 @@ export class ReadingDiaryRecordController {
             const data: RecordDiaryDTO = createRecordSchema.parse(req.body); //Validando o que vem do body
             //Criando objeto
             const dataRecords = await this.readingDiaryRecordService.createRecordOfReadingDiary(idDiary, idUser, data);
-            if (!dataRecords.success) return res.status(400).json({message: dataRecords.message})
-            
+            if (!dataRecords.success) return res.status(400).json({ message: dataRecords.message })
+
             //Retornando
-            return res.status(201).json({message: dataRecords.message, data: dataRecords.data});
+            return res.status(201).json({ message: dataRecords.message, data: dataRecords.data });
         } catch (error) {
             // Verificar se o erro é de validação do Zod
             if (error instanceof ZodError) {
@@ -86,19 +93,25 @@ export class ReadingDiaryRecordController {
             const idRecord = req.params.idRecord; //Pegando o id do diáiro
             const idUser = req.id_User; //Pegando o id do usuário
             const data: RecordDiaryDTO = createRecordSchema.parse(req.body); //Validando o que vem do body
+            
+            //Verificando se o id do diário foi fornecido
+            if (!idRecord || idRecord === undefined || idRecord === null) return res.status(401).json({ message: "ID of record reading book not informed" });
+
+            //Validando que o id é válido
+            if (!validate(idRecord)) return res.status(401).json({ message: "Invalid format ID" });
 
             //Criando objeto
             const dataRecords = await this.readingDiaryRecordService.updateRecordOfReadingDiary(idRecord, idUser, data);
-            if (!dataRecords.success) return res.status(400).json({message: dataRecords.message})
-            
+            if (!dataRecords.success) return res.status(400).json({ message: dataRecords.message })
+
             //Retornando
-            return res.status(200).json({message: dataRecords.message, data: dataRecords.data});
+            return res.status(200).json({ message: dataRecords.message, data: dataRecords.data });
         } catch (error) {
             // Verificar se o erro é de validação do Zod
             if (error instanceof ZodError) {
                 return handleZodError(error, res); // Usando a função de tratamento de erros
             }
-            
+
             // Caso seja um erro desconhecido, retornar erro genérico
             console.error("Error return records of Reading Diary: ", error);
             return res.status(500).json({ error: "Internal Server Error" });
@@ -110,13 +123,19 @@ export class ReadingDiaryRecordController {
         try {
             const idRecord = req.params.idRecord; //Pegando o id do diáiro
             const idUser = req.id_User; //Pegando o id do usuário
+            
+            //Verificando se o id do diário foi fornecido
+            if (!idRecord || idRecord === undefined || idRecord === null) return res.status(401).json({ message: "ID of record reading book not informed" });
+
+            //Validando que o id é válido
+            if (!validate(idRecord)) return res.status(401).json({ message: "Invalid format ID" });
 
             //Criando objeto
             const dataRecords = await this.readingDiaryRecordService.removeRecordOfReadingDiary(idRecord, idUser);
-            if (!dataRecords.success) return res.status(400).json({message: dataRecords.message})
-            
+            if (!dataRecords.success) return res.status(400).json({ message: dataRecords.message })
+
             //Retornando
-            return res.status(200).json({message: dataRecords.message});
+            return res.status(200).json({ message: dataRecords.message });
         } catch (error) {
             // Caso seja um erro desconhecido, retornar erro genérico
             console.error("Error return records of Reading Diary: ", error);
