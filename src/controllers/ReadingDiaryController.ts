@@ -1,6 +1,5 @@
 //Importações
 import { Request, Response } from "express";
-import { validate } from "uuid";
 
 //Services
 import { ReadingDiaryServices } from "../services/ReagingDiaryServices";
@@ -23,7 +22,7 @@ export class ReadingDiaryController {
 
             //Pesquisando os registros de diários de leitura
             const registersDiariesOfUser = await this.readingDiaryServices.listAllReadingDiariesOfUser(idUser);
-            if (registersDiariesOfUser.length <= 0) return res.status(400).json({message: "User doesn't have reading diaries"});  
+            if (registersDiariesOfUser.length <= 0) return res.status(200).json({message: "User doesn't have reading diaries"});  
 
             //Retornando os registros
             return res.status(200).json({message: "Listing diaries of reading of user", data: registersDiariesOfUser});
