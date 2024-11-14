@@ -42,6 +42,19 @@ enum CollectionStatus {
   CUSTOM
 }
 
+// Enumeração para definir se leitura foi finalizada ou ainda está sendo realizada
+enum ReadingFinished {
+  DONE
+  READING
+  REREAD
+}
+
+//Enumaração para definir se a leitura é private ou public
+enum EntityVisibility {
+  PRIVATE
+  PUBLIC
+}
+
 // ========== MODELO DO BANCO DE DADOS =========
 
 //Entidade User
@@ -107,15 +120,19 @@ model Follow {
 //Entidade Book
 model Book {
   id             String  @id @default(uuid())
-  ISBN           String? @unique
-  title          String  @unique
+  externalID     String  @unique
+  ISBN_13        String?
+  ISBN_10        String?
+  title          String
+  subTitle       String?
   coverImage     String
   summary        String?
   author         String
   publisher      String
+  publisheData   String
   quantityPages  Int
   mainGenre      String
-  secondaryGenre String
+  secondaryGenre String?
 
   //Relacionamentos
   collections    BookCollection[]
@@ -127,10 +144,10 @@ model Book {
 model Collection {
   id               String           @id @default(uuid())
   collectionStatus CollectionStatus
-  defaultType      DefaultType? // Aplicável apenas se for do tipo DEFAULT
+  defaultType      DefaultType?     // Aplicável apenas se for do tipo DEFAULT
   description      String?
   title            String
-  visibility       Boolean // Se é visível para outros ou não
+  visibility       EntityVisibility @default(PUBLIC) // Se é visível para outros ou não
   createdAt        DateTime         @default(now())
 
   // Relacionamento com o usuário (quem criou a coleção)
@@ -139,6 +156,9 @@ model Collection {
 
   // Relacionamento com os livros
   books BookCollection[]
+
+  //Garantindo que a coleção seja única para cada usuário
+  @@unique([defaultType, userId])
 }
 
 // Entidade BookCollection
@@ -148,7 +168,7 @@ model BookCollection {
   addedAt      DateTime @default(now())
 
   // Relacionamentos
-  book       Book       @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  book       Book       @relation(fields: [bookId], references: [id])
   collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 
   // Chave primária composta
@@ -159,7 +179,7 @@ model BookCollection {
 model Avaliation {
   id              String   @id @default(uuid())
   content         String
-  evaluationGrade String
+  evaluationGrade Int
   createdAt       DateTime @default(now())
 
   // Relacionamento com o usuário que fez a avaliação
@@ -168,13 +188,19 @@ model Avaliation {
 
   // Relacionamento com o livro avaliado
   bookId String
-  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  book   Book   @relation(fields: [bookId], references: [id])
+
+  // Restringe para que cada usuário possa avaliar um livro apenas uma vez
+  @@unique([userId, bookId])
 }
 
 //Entidade ReadingDiary
 model ReadingDiary {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
+  id                String           @id @default(uuid())
+  readingPercentage Int
+  readingFinished   ReadingFinished  @default(READING)
+  visibility        EntityVisibility @default(PRIVATE)
+  createdAt         DateTime         @default(now())
 
   //Relacionamento com registros de diário
   readingDiaryRecords ReadingDiaryRecord[]
@@ -185,7 +211,7 @@ model ReadingDiary {
 
   // Relacionamento com o livro avaliado
   bookId String
-  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  book   Book   @relation(fields: [bookId], references: [id])
 }
 
 //Entidade ReadingDiaryRecord
@@ -193,7 +219,7 @@ model ReadingDiaryRecord {
   id              String   @id @default(uuid())
   content         String
   pagesRead       Int
-  evaluationGrade String
+  evaluationGrade Int
   createdAt       DateTime @default(now())
 
   //Relacionamento com o diário de leitura
@@ -235,7 +261,6 @@ model Comment {
 
 //Entidade Like
 model Like {
-  id        String   @id @default(uuid())
   createdAt DateTime @default(now())
 
   //Relacionamento com o usuário que comentou a publicação
@@ -245,4 +270,7 @@ model Like {
   //Relacionamento com  a publicação
   publicationId String
   publication   Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+
+  // Chave primária composta
+  @@id([publicationId, userId])
 }

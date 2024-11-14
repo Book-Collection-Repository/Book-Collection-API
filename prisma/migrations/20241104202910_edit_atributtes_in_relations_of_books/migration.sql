@@ -10,6 +10,9 @@ CREATE TYPE "DefaultType" AS ENUM ('REVIEWED', 'READING', 'WANT_TO_READ', 'READ'
 -- CreateEnum
 CREATE TYPE "CollectionStatus" AS ENUM ('DEFAULT', 'CUSTOM');
 
+-- CreateEnum
+CREATE TYPE "ReadingFinished" AS ENUM ('DONE', 'READING', 'REREAD');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
@@ -52,15 +55,19 @@ CREATE TABLE "Follow" (
 -- CreateTable
 CREATE TABLE "Book" (
     "id" TEXT NOT NULL,
-    "ISBN" TEXT,
+    "externalID" TEXT NOT NULL,
+    "ISBN_13" TEXT,
+    "ISBN_10" TEXT,
     "title" TEXT NOT NULL,
+    "subTitle" TEXT,
     "coverImage" TEXT NOT NULL,
     "summary" TEXT,
     "author" TEXT NOT NULL,
     "publisher" TEXT NOT NULL,
+    "publisheData" TEXT NOT NULL,
     "quantityPages" INTEGER NOT NULL,
     "mainGenre" TEXT NOT NULL,
-    "secondaryGenre" TEXT NOT NULL,
+    "secondaryGenre" TEXT,
 
     CONSTRAINT "Book_pkey" PRIMARY KEY ("id")
 );
@@ -92,7 +99,7 @@ CREATE TABLE "BookCollection" (
 CREATE TABLE "Avaliation" (
     "id" TEXT NOT NULL,
     "content" TEXT NOT NULL,
-    "evaluationGrade" TEXT NOT NULL,
+    "evaluationGrade" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "userId" TEXT NOT NULL,
     "bookId" TEXT NOT NULL,
@@ -103,6 +110,8 @@ CREATE TABLE "Avaliation" (
 -- CreateTable
 CREATE TABLE "ReadingDiary" (
     "id" TEXT NOT NULL,
+    "readingPercentage" INTEGER NOT NULL,
+    "readingFinished" "ReadingFinished" NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "userId" TEXT NOT NULL,
     "bookId" TEXT NOT NULL,
@@ -115,7 +124,7 @@ CREATE TABLE "ReadingDiaryRecord" (
     "id" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "pagesRead" INTEGER NOT NULL,
-    "evaluationGrade" TEXT NOT NULL,
+    "evaluationGrade" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "readingDiaryId" TEXT NOT NULL,
 
@@ -162,10 +171,10 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 CREATE UNIQUE INDEX "User_profileName_key" ON "User"("profileName");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Book_ISBN_key" ON "Book"("ISBN");
+CREATE UNIQUE INDEX "Book_externalID_key" ON "Book"("externalID");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Book_title_key" ON "Book"("title");
+CREATE UNIQUE INDEX "Avaliation_userId_bookId_key" ON "Avaliation"("userId", "bookId");
 
 -- AddForeignKey
 ALTER TABLE "Message" ADD CONSTRAINT "Message_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -183,7 +192,7 @@ ALTER TABLE "Follow" ADD CONSTRAINT "Follow_followedId_fkey" FOREIGN KEY ("follo
 ALTER TABLE "Collection" ADD CONSTRAINT "Collection_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "BookCollection" ADD CONSTRAINT "BookCollection_bookId_fkey" FOREIGN KEY ("bookId") REFERENCES "Book"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "BookCollection" ADD CONSTRAINT "BookCollection_bookId_fkey" FOREIGN KEY ("bookId") REFERENCES "Book"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "BookCollection" ADD CONSTRAINT "BookCollection_collectionId_fkey" FOREIGN KEY ("collectionId") REFERENCES "Collection"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -192,13 +201,13 @@ ALTER TABLE "BookCollection" ADD CONSTRAINT "BookCollection_collectionId_fkey" F
 ALTER TABLE "Avaliation" ADD CONSTRAINT "Avaliation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Avaliation" ADD CONSTRAINT "Avaliation_bookId_fkey" FOREIGN KEY ("bookId") REFERENCES "Book"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Avaliation" ADD CONSTRAINT "Avaliation_bookId_fkey" FOREIGN KEY ("bookId") REFERENCES "Book"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ReadingDiary" ADD CONSTRAINT "ReadingDiary_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ReadingDiary" ADD CONSTRAINT "ReadingDiary_bookId_fkey" FOREIGN KEY ("bookId") REFERENCES "Book"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ReadingDiary" ADD CONSTRAINT "ReadingDiary_bookId_fkey" FOREIGN KEY ("bookId") REFERENCES "Book"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ReadingDiaryRecord" ADD CONSTRAINT "ReadingDiaryRecord_readingDiaryId_fkey" FOREIGN KEY ("readingDiaryId") REFERENCES "ReadingDiary"("id") ON DELETE CASCADE ON UPDATE CASCADE;
