@@ -1,6 +1,5 @@
 //Importações
 import { prisma } from "./prisma";
-import { v4 as uuidv4 } from "uuid";
 
 //Type
 import { CreateUserDTO, UpdatePasswordUserDTO, UpdateProfileUserDTO } from "../types/userTypes";
@@ -10,13 +9,26 @@ export class UserService {
 
     //Retornar todos os usuários cadastrados no sistema
     async getAllUsers() {
-        return await prisma.user.findMany();
+        return await prisma.user.findMany({
+            include: {
+                avaliations: true,
+                collections: true,
+                publications: true,
+                readingDiaries: true,
+            }
+        });
     }
 
     //Procura um usuário com um determinado id
     async getUserByID(id: string) {
         const user = await prisma.user.findUnique({
-            where: { id }
+            where: { id },
+            include: {
+                avaliations: true,
+                collections: true,
+                publications: true,
+                readingDiaries: true,
+            }
         });
 
         return user;
@@ -25,7 +37,13 @@ export class UserService {
     //Procura um usuário com um determinado email
     async getUserByEmail(email: string){
         const userEmail = await prisma.user.findUnique({
-            where: { email }
+            where: { email },
+            include: {
+                avaliations: true,
+                collections: true,
+                publications: true,
+                readingDiaries: true,
+            }
         });
 
         return userEmail;
@@ -46,7 +64,13 @@ export class UserService {
     // Procura um usuário com um determinado nome de perfil
     async getUserByProfileName(profileName: string) {
         const userProfileName = await prisma.user.findUnique({
-            where: { profileName }
+            where: { profileName },
+            include: {
+                avaliations: true,
+                collections: true,
+                publications: true,
+                readingDiaries: true,
+            }
         });
 
         return userProfileName;
@@ -65,7 +89,7 @@ export class UserService {
     }
     
     // Validando se existe um usuário com o mesmo e-mail ou nome de perfil
-    public async validateUserInformation(email: string, profileName: string): Promise<string | null> {
+    async validateUserInformation(email: string, profileName: string): Promise<string | null> {
         const emailExists = await this.getUserByEmail(email);
         const profileNameExists = await this.getUserByProfileName(profileName);
 
@@ -75,7 +99,7 @@ export class UserService {
         return null;
     };
 
-    public async validateUserInformationUpdate( email: string, profileName: string, idUser: string ): Promise<string | null> {
+    async validateUserInformationUpdate( email: string, profileName: string, idUser: string ): Promise<string | null> {
         const emailExists = await this.getUserByEmailButNotID(email, idUser);
         const profileNameExists = await this.getUserByProfileNameButNotID(profileName, idUser);
     

@@ -144,7 +144,7 @@ model Book {
 model Collection {
   id               String           @id @default(uuid())
   collectionStatus CollectionStatus
-  defaultType      DefaultType?     @unique // Aplicável apenas se for do tipo DEFAULT
+  defaultType      DefaultType?     // Aplicável apenas se for do tipo DEFAULT
   description      String?
   title            String
   visibility       EntityVisibility @default(PUBLIC) // Se é visível para outros ou não
@@ -156,6 +156,9 @@ model Collection {
 
   // Relacionamento com os livros
   books BookCollection[]
+
+  //Garantindo que a coleção seja única para cada usuário
+  @@unique([defaultType, userId])
 }
 
 // Entidade BookCollection

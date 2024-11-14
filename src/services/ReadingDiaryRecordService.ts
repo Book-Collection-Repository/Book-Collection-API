@@ -59,7 +59,7 @@ export class ReadingDiaryRecordServices {
             });
 
             //Atualizando a porcentagem de leitua do usuário
-            const updatePercentageRead = await this.readingDiaryService.updateReadingPercentageOfDiary(diaryId, createRecord.pagesRead);
+            const updatePercentageRead = await this.readingDiaryService.updateReadingPercentageOfDiary(diaryId, userId, createRecord.pagesRead);
             if (!updatePercentageRead.success) return { success: updatePercentageRead.success, message: updatePercentageRead.message };
 
             //Retornando a criação do registro
@@ -89,7 +89,7 @@ export class ReadingDiaryRecordServices {
             });
 
             //Atualizando a porcentagem de leitua do usuário
-            const updatePercentageRead = await this.readingDiaryService.updateReadingPercentageOfDiary(recordDiaryExists.readingDiaryId, updateRecord.pagesRead);
+            const updatePercentageRead = await this.readingDiaryService.updateReadingPercentageOfDiary(recordDiaryExists.readingDiaryId, userId, updateRecord.pagesRead);
             if (!updatePercentageRead.success) return { success: updatePercentageRead.success, message: updatePercentageRead.message };
 
 

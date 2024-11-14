@@ -5,7 +5,8 @@ import { validate } from "uuid";
 
 //Services
 import { UserService } from "../services/UserService";
-import { MinioService } from "../services/MinioService";
+import { RedisClientService } from "../services/RedisClientService";
+import { CollectionService } from "../services/CollectionService";
 
 //Type
 import { CreateUserDTO, AuthenticateUserDTO, UpdateProfileUserDTO, UpdatePasswordUserDTO } from "../types/userTypes";
@@ -18,16 +19,17 @@ import { hashPassword, checkePassword } from "../utils/userUtils/hashPassword";
 import { handleZodError } from "../utils/errorHandler";
 import { generateToken } from "../utils/userUtils/generateToken";
 
-//Redis
-import { redis } from "../connection/redisClient";
-
 //Class
 export class UserController {
     private userService: UserService;
+    private redisClientService: RedisClientService;
+    private collectionService: CollectionService
 
     constructor() {
         this.userService = new UserService();
-    }
+        this.redisClientService = new RedisClientService();
+        this.collectionService = new CollectionService();
+    };
 
     // Listar todos os usuários
     async findAllUsers(req: Request, res: Response): Promise<Response> {
@@ -44,13 +46,13 @@ export class UserController {
     //Listar um usuário por ID
     async searchUserForId(req: Request, res: Response): Promise<Response> {
         try {
-            //Busa
+            //Pega o id do usuário
             const idUser = req.params.id;
             if (!validate(idUser)) return res.status(400).json({ error: "Invalid ID format" });
 
             //Primeiro procura no redis
-            const cachedUser = await redis.get(`user:${idUser}`);
-            if (cachedUser) return res.status(200).json({ searchUser: JSON.parse(cachedUser) });
+            const cachedUser = await this.redisClientService.getUserData(idUser);
+            if (cachedUser) return res.status(200).json({ message: "Data of Redis Client", searchUser: cachedUser });
 
             //Caso não encontre, realiza a pesquisa
             const searchUser = await this.userService.getUserByID(idUser);
@@ -59,8 +61,9 @@ export class UserController {
             if (!searchUser) return res.status(404).json({ error: "User not found" });
 
             // Armazenar o usuário no Redis para consultas futuras
-            await redis.set(`user:${idUser}`, JSON.stringify(searchUser));
+            await this.redisClientService.saveUserData(idUser, searchUser);
 
+            //Retornando o usuário
             return res.status(200).json({ searchUser });
         } catch (error) {
             console.error("Error return user: ", error);
@@ -77,8 +80,8 @@ export class UserController {
             if (!profileName || typeof profileName !== 'string' || profileName.trim() === '') return res.status(400).json({ error: "Profile name must be a non-empty string" });
 
             //Primeiro procura no redis
-            const cachedUser = await redis.get(`user:${profileName}`);
-            if (cachedUser) return res.status(200).json({ searchUser: JSON.parse(cachedUser) });
+            const cachedUser = await this.redisClientService.getUserData(profileName);
+            if (cachedUser) return res.status(200).json({ message: "Data of Redis Client", searchUser: cachedUser });
 
             //Caso não encontre, realiza a pesquisa
             const searchUser = await this.userService.getUserByProfileName(profileName);
@@ -87,7 +90,7 @@ export class UserController {
             if (!searchUser) return res.status(404).json({ error: "User not found" });
 
             // Armazenar o usuário no Redis para consultas futuras
-            await redis.set(`user:${profileName}`, JSON.stringify(searchUser));
+            await this.redisClientService.saveUserData(profileName, searchUser);
 
             return res.status(200).json({ searchUser });
         } catch (error) {
@@ -103,10 +106,7 @@ export class UserController {
 
             // Verificar se o email ou nome de perfil já existe no sistema
             const validationError = await this.userService.validateUserInformation(dataUser.email, dataUser.profileName);
-
-            if (validationError) {
-                return res.status(409).json({ error: validationError });
-            }
+            if (validationError) return res.status(409).json({ error: validationError });
 
             // Criptografar a senha do usuário
             const passwordHash = await hashPassword(dataUser.password);
@@ -116,9 +116,18 @@ export class UserController {
 
             // Criar o novo usuário
             const newUser = await this.userService.createUser(userForCreating);
+            if (!newUser) return res.status(400).json({error: "Creating user not completed"});
+
+            // Criando coleções padrão do usuário
+            const defaultCollection = await this.collectionService.createDefaultCollections(newUser.id);
+            if (!defaultCollection.success) return res.status(defaultCollection.status).json({error: defaultCollection.message});
+
+            //Gerando token
+            const tokenResult = generateToken(newUser.profileName, newUser.id);
+            if (!tokenResult.success) return res.status(500).json({ error: tokenResult.message }); 
 
             // Retornar o novo usuário criado
-            return res.status(201).json(newUser);
+            return res.status(201).json({newUser, token: tokenResult.token});
 
         } catch (error) {
             // Verificar se o erro é de validação do Zod
@@ -130,7 +139,7 @@ export class UserController {
             console.error("Error return user: ", error);
             return res.status(500).json({ error: "Internal Server Error" });
         }
-    }
+    };
 
     //Autenticando um usuário
     async authenticateUser(req: Request, res: Response): Promise<Response> {
@@ -162,7 +171,7 @@ export class UserController {
             console.error("Error creating user: ", error);
             return res.status(500).json({ error: "Internal Server Error" });
         }
-    }
+    };
 
     //Autenticação válida
     async authenticateUserIsValid(req: Request, res: Response): Promise<Response> {
@@ -203,7 +212,7 @@ export class UserController {
             console.error("Error updating user: ", error);
             return res.status(500).json({ error: "Internal Server Error" });
         }
-    }
+    };
 
     //Edição de senha
     async updatePassword(req: Request, res: Response): Promise<Response> {
@@ -237,7 +246,7 @@ export class UserController {
             console.error("Error updating user: ", error);
             return res.status(500).json({ error: "Internal Server Error" });
         }
-    }
+    };
 
     //Edição ou adição de foto de perfil
     async updateProfilePhoto(req: Request, res: Response): Promise<Response> {
@@ -254,6 +263,7 @@ export class UserController {
             //Validando que as informações existem
             if (!requestImage) return res.status(400).json({ error: "File not existed" });
 
+            //Buscando usuário e validando que ele existe
             const userExistWithID = await this.userService.getUserByID(idUser);
             if (!userExistWithID) return res.status(404).json({ error: "User not found with ID" });
 
@@ -265,26 +275,20 @@ export class UserController {
             //Salvando no banco de dados
             const userUpdatedImage = await this.userService.updatePhotoUser(idUser, `images/${requestImage.filename}`);
 
-            return res.status(201).json({ massage: "Imagem adicionada", image: requestImage.filename, user: userUpdatedImage });
+            return res.status(201).json({ massage: "Profile picture added", image: requestImage.filename, user: userUpdatedImage });
 
         } catch (error) {
             // Caso seja um erro desconhecido, retornar erro genérico
             console.error("Error uploading user: ", error);
             return res.status(500).json({ error: "Internal Server Error" });
         }
-    }
+    };
 
     //Remover perfil
     async deleteProfile(req: Request, res: Response): Promise<Response> {
         try {
             //Pegando o id do usuário
             const idUser = req.id_User;
-
-            //Valida que o id é válido e que o usuário existe
-            if (!validate(idUser)) return res.status(400).json({ error: "Invalid ID format" });
-
-            const userExistWithID = await this.userService.getUserByID(idUser);
-            if (!userExistWithID) return res.status(404).json({ error: "User with ID not found" });
 
             //Deleta usuário
             const removeUser = await this.userService.removeUser(idUser);
@@ -296,5 +300,5 @@ export class UserController {
             console.error("Error deleting user: ", error);
             return res.status(500).json({ error: "Internal Server Error" });
         }
-    }
+    };
 }

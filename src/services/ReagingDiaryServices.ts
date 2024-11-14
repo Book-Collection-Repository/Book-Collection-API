@@ -5,6 +5,7 @@ import { prisma } from "./prisma";
 import { BookService } from "./BookService";
 import { RedisClientService } from "./RedisClientService";
 import { ReadingFinished } from "@prisma/client";
+import { BookCollectionService } from "./BookCollectionService";
 
 //Types
 
@@ -13,16 +14,19 @@ export class ReadingDiaryServices {
 
     private bookService: BookService;
     private redisClientService: RedisClientService;
+    private bookCollectionService: BookCollectionService;
 
     constructor() {
         this.bookService = new BookService();
         this.redisClientService = new RedisClientService();
-    }
+        this.bookCollectionService = new BookCollectionService();
+    };
 
     //Méotodo para listar todos os diários de leitura
     async listAllReadingDiariesOfUser(userId: string) {
         const diaries = await prisma.readingDiary.findMany({
-            where: { userId }
+            where: { userId },
+            include: {readingDiaryRecords: true}
         });
 
         return diaries;
@@ -49,7 +53,7 @@ export class ReadingDiaryServices {
 
             // Atualiza o status para `REREAD` para reiniciar a leitura
             if (existingDiary.readingFinished === "DONE") await this.updateCategoryOfReread(existingDiary.id);
-        }
+        };
 
         // Criando um novo diário de leitura
         const createDiary = await prisma.readingDiary.create({
@@ -59,6 +63,9 @@ export class ReadingDiaryServices {
                 readingPercentage: 0,
             },
         });
+
+        //Adicionando o livro a coleção de lendo
+        await this.bookCollectionService.addtingBookInDefaultCollection(bookId, userId, "READING");
 
         return { success: true, message: "Reading Diary created", data: createDiary };
     };
@@ -70,7 +77,39 @@ export class ReadingDiaryServices {
             data: { readingFinished: "REREAD", readingPercentage: 0 }
         });
 
+        // Adicionar o livro novamente na coleção "READING"
+        await this.bookCollectionService.addtingBookInDefaultCollection(updatedDiary.bookId, updatedDiary.userId, "READING");
+
         return { success: true, message: "Reading Diary reactivated for rereading.", data: updatedDiary };
+    };
+
+    //Método para finalizar um registro de leitura
+    async finishReadingDiary(diaryId: string, userId: string) {
+        try {
+            // Verificar se o diário de leitura existe e é do usuário correto
+            const diary = await this.listReadingDiary(diaryId);
+            if (!diary || diary.userId !== userId) {
+                return { success: false, message: "Reading diary not found or user not authorized" };
+            }
+
+            // Atualizar o status do diário para "DONE" e a porcentagem de leitura para 100%
+            const updatedDiary = await prisma.readingDiary.update({
+                where: { id: diaryId },
+                data: {
+                    readingFinished: "DONE",
+                    readingPercentage: 100
+                },
+            });
+
+            // Remover o livro da coleção "READING" e adicionar à coleção "READ"
+            await this.bookCollectionService.removeBookFromCollection(diary.bookId, userId, "READING");
+            await this.bookCollectionService.addtingBookInDefaultCollection(diary.bookId, userId, "READ");
+
+            return { success: true, message: "Reading diary finished successfully", data: updatedDiary };
+        } catch (error) {
+            console.error("Error finishing reading diary:", error);
+            return { success: false, message: "Failed to finish reading diary" };
+        }
     };
 
     //Método para atualizar o status de um diário de leitura
@@ -84,7 +123,7 @@ export class ReadingDiaryServices {
     };
 
     //Método para atualizar porcentagem de leitura
-    async updateReadingPercentageOfDiary(diaryId: string, pagesRead: number) {
+    async updateReadingPercentageOfDiary(diaryId: string, userId: string, pagesRead: number) {
         //Validando que o diário de leitura existe
         const data = await this.listReadingDiary(diaryId);
         if (!data) return { success: false, message: "ReadingDiary not found" };
@@ -98,7 +137,7 @@ export class ReadingDiaryServices {
         if (!readPercentage.success) return { success: readPercentage.success, message: readPercentage.message };
 
         //Se a porcentagem for maior ou igual a 100, finalizar diário
-        if (readPercentage.data && readPercentage.data >= 100) await this.updateCategoryOfReadingDiaryForReafingFinished(diaryId, "DONE");
+        if (readPercentage.data && readPercentage.data >= 100) await this.finishReadingDiary(diaryId, userId);
 
         //Salvando a porcentagem atual no Redis como porcentagem anterior antes de atualizar
         await this.redisClientService.savePreviousReadingPercentage(diaryId, data.readingPercentage);
