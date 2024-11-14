@@ -30,6 +30,25 @@ export class BookController {
         }
     };
 
+    //Método para listar livros do banco de dados por ID
+    async getBookInDataBaseForId(req: Request, res: Response): Promise<Response> {
+        try {
+            //Pegando atributo
+            const idBook = req.params.idBook;
+
+            //Buscando título no banco de dados
+            const getBooks = await this.bookService.getBookInDataBaseWithID(idBook);
+            if (!getBooks) return res.status(404).json({ message: "Book not found" });
+
+            //Retornando respostas
+            return res.status(200).json({ message: getBooks });
+
+        } catch (error) {
+            console.error("Error return book: ", error);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+    };
+
     //Método para listar livros do banco de dados por título
     async getBooksInDataBaseForTitle(req: Request, res: Response): Promise<Response> {
         try {
@@ -57,10 +76,32 @@ export class BookController {
             if (!isbn || isbn === null || isbn === undefined) return res.status(400).json({error: "ISBN not found"});
 
             //Buscando livro no banco de dados
-            const getBooks = await this.bookService.searchBookInExternalApiForId(isbn);
+            const getBooks = await this.bookService.searchBooksInDataBaseForISBN(isbn);
             if (!getBooks) return res.status(404).json({ message: "Book not found" });
 
             return res.status(200).json({ message: getBooks });
+        } catch (error) {
+            console.error("Error return book: ", error);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+    };
+
+    //Método para listar livros do banco de dados por ID
+    async getBookInExternalApiForId(req: Request, res: Response): Promise<Response> {
+        try {
+            //Pegando atributo
+            const idBook = req.params.idBook;
+
+            //Validando que o id foi passado
+            if (!idBook || idBook === null || idBook === undefined) return res.status(404).json({message: "ID of book not defined"});
+
+            //Buscando título no banco de dados
+            const getBooks = await this.bookService.getBookInDataBaseWithExternalID(idBook);
+            if (!getBooks) return res.status(404).json({ message: "Book not found" });
+
+            //Retornando respostas
+            return res.status(200).json({ message: getBooks });
+
         } catch (error) {
             console.error("Error return book: ", error);
             return res.status(500).json({ error: "Internal Server Error" });
@@ -165,7 +206,7 @@ export class BookController {
     //Método para deletar livro do banco de dados
     async removeBookInDataBase(req: Request, res: Response): Promise<Response> {
         try {
-            const idBook = req.params.id;
+            const idBook = req.params.idBook;
 
             //Validando que o livro existe
             const existBookWithID = await this.bookService.getBookInDataBaseWithID(idBook);
