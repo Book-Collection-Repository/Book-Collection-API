@@ -90,30 +90,52 @@ export class BookCollectionService {
         }
     };
 
-    //Método para remover um livro da coleção
+    // Método para remover um livro da coleção
     async removingBookInCollection(collectionId: string, bookId: string) {
         try {
-            //Verificando se o livro já está presente na coleção
+            // Verificando se o livro já está presente na coleção
             const verifyBookInCollection = await this.CheckingIfBookIsStoredTheCollection(collectionId, bookId);
-            if (!verifyBookInCollection) return { success: false, status: 400, message: "The book is not already in this collection" };
+            if (!verifyBookInCollection) return { success: false, status: 400, message: "The book is not in this collection" };
 
-            //Removendo livro da coleção
+            // Removendo livro da coleção
             await prisma.bookCollection.delete({
                 where: {
                     bookId_collectionId: {
-                        bookId, collectionId
+                        bookId,
+                        collectionId
                     }
                 },
             });
 
-            //Retornando resposta
-            return { success: true, status: 200, message: "Book is removing in the collection" };
+            // Retornando resposta
+            return { success: true, status: 200, message: "Book removed from the collection" };
 
         } catch (error) {
-            console.error("Error removing book in collection: ", error);
-            return { success: false, status: 400, message: "There was a problem, default collection not created" };
+            console.error("Error removing book from collection: ", error);
+            return { success: false, status: 400, message: "There was a problem removing the book from the collection" };
         }
     };
+
+    // Método para remover um livro de uma coleção padrão
+    async removeBookFromCollection(bookId: string, userId: string, type: DefaultType) {
+        // Procurar a coleção específica
+        const collection = await prisma.collection.findUnique({
+            where: { defaultType_userId: { defaultType: type, userId } }
+        });
+        if (!collection) return { success: false, message: "Collection not found" };
+
+        // Verificando se o livro já está na coleção
+        const isBookInCollection = await this.CheckingIfBookIsStoredTheCollection(collection.id, bookId);
+        if (!isBookInCollection) {
+            return { success: false, message: "Book is not in the collection" };
+        };
+
+        // Remover o livro da coleção
+        const removeBook = await this.removingBookInCollection(collection.id, bookId);
+
+        return { success: removeBook.success, message: removeBook.message };
+    };
+
 
     //Função para identificar se o livro já faz parte da coleção
     private async CheckingIfBookIsStoredTheCollection(collectionId: string, bookId: string) {
