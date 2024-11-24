@@ -21,6 +21,7 @@ userRoutes.get("/", userController.findAllUsers.bind(userController));
 userRoutes.post("/", userController.createUser.bind(userController));
 userRoutes.post("/authenticate", userController.authenticateUser.bind(userController));
 userRoutes.patch("/update/password", userController.updatePassword.bind(userController));
+userRoutes.get("/profile", authValidationToken, checkingUserExists, userController.searchUserForToken.bind(userController));
 userRoutes.get("/:id", authValidationToken, checkingUserExists, userController.searchUserForId.bind(userController));
 userRoutes.get("/profile/:profileName", authValidationToken, checkingUserExists, userController.searchUserForProfileName.bind(userController));
 userRoutes.get("/authenticate/validator", authValidationToken, checkingUserExists, userController.authenticateUserIsValid.bind(userController));
