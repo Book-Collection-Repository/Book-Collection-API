@@ -35,7 +35,7 @@ export class UserService {
     }
 
     //Procura um usuário com um determinado email
-    async getUserByEmail(email: string){
+    async getUserByEmail(email: string) {
         const userEmail = await prisma.user.findUnique({
             where: { email },
             include: {
@@ -52,9 +52,9 @@ export class UserService {
     //Procurar um usuário com um determinado email, mas com id diferente
     async getUserByEmailButNotID(email: string, id: string) {
         const data = await prisma.user.findFirst({
-            where:{
+            where: {
                 email,
-                id: {not: id}
+                id: { not: id }
             }
         });
 
@@ -81,13 +81,13 @@ export class UserService {
         const data = await prisma.user.findFirst({
             where: {
                 profileName,
-                id: {not: id}
+                id: { not: id }
             }
         });
 
         return data;
     }
-    
+
     // Validando se existe um usuário com o mesmo e-mail ou nome de perfil
     async validateUserInformation(email: string, profileName: string): Promise<string | null> {
         const emailExists = await this.getUserByEmail(email);
@@ -99,21 +99,27 @@ export class UserService {
         return null;
     };
 
-    async validateUserInformationUpdate( email: string, profileName: string, idUser: string ): Promise<string | null> {
+    async validateUserInformationUpdate(email: string, profileName: string, idUser: string): Promise<string | null> {
         const emailExists = await this.getUserByEmailButNotID(email, idUser);
         const profileNameExists = await this.getUserByProfileNameButNotID(profileName, idUser);
-    
+
         if (emailExists) return 'Email already exists';
         if (profileNameExists) return 'Profile name already exists';
-    
+
         return null;
     };
-    
+
     // Cria um usuário com as informações que foram passadas
     async createUser(data: CreateUserDTO) {
         try {
             const user = await prisma.user.create({
-                data: { ...data }
+                data: { ...data },
+                include: {
+                    avaliations: true,
+                    collections: true,
+                    publications: true,
+                    readingDiaries: true,
+                }
             });
 
             return user;
@@ -126,22 +132,28 @@ export class UserService {
     // Bloqueia operação concorrente
     async lockedOptimistUser(id: string, version: number) {
         const user = await prisma.user.findUnique({
-            where: {id},
+            where: { id },
         });
 
-        if (version !== user?.version) return { success: false, status: 400, message: "The user version is not compatible with the database version" }; 
-    
-        return { success: true, status: 200, message: "The user version compatible with the database version"};
+        if (version !== user?.version) return { success: false, status: 400, message: "The user version is not compatible with the database version" };
+
+        return { success: true, status: 200, message: "The user version compatible with the database version" };
     }
 
     // Editando as informações de um usuário
     async updateUser(data: UpdateProfileUserDTO, id: string) {
         try {
             const user = await prisma.user.update({
-                where: {id},
-                data: { ... data, }
+                where: { id },
+                data: { ...data, },
+                include: {
+                    avaliations: true,
+                    collections: true,
+                    publications: true,
+                    readingDiaries: true,
+                }
             });
-            
+
             return user;
 
         } catch (error) {
@@ -154,13 +166,12 @@ export class UserService {
     async updatePasswordUser(data: UpdatePasswordUserDTO) {
         try {
             const user = await prisma.user.update({
-                where: {email: data.email},
+                where: { email: data.email },
                 data: {
-                    password: data.password,
-                    version: {increment: 1},
+                    password: data.password
                 }
             });
-            
+
             return user;
 
         } catch (error) {
@@ -173,13 +184,13 @@ export class UserService {
     async updatePhotoUser(id: string, fileName: string) {
         try {
             const user = await prisma.user.update({
-                where: {id},
+                where: { id },
                 data: {
                     profileImage: fileName,
-                    version: {increment: 1}
+                    version: { increment: 1 }
                 }
             });
-            
+
             return user;
 
         } catch (error) {
@@ -224,9 +235,9 @@ export class UserService {
     async removeUser(id: string) {
         try {
             await prisma.user.delete({
-                where: {id},
+                where: { id },
             });
-            
+
             return "User removed";
         } catch (error) {
             console.error("Error removing user: ", error);
