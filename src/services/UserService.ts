@@ -12,27 +12,23 @@ export class UserService {
         return await prisma.user.findMany({
             include: {
                 avaliations: true,
-                collections: true,
+                followers: true,
+                following: true,
                 publications: true,
-                readingDiaries: true,
             }
         });
-    }
+    };
 
     //Procura um usuário com um determinado id
     async getUserByID(id: string) {
-        const user = await prisma.user.findUnique({
+        return await prisma.user.findUnique({
             where: { id },
             include: {
                 avaliations: true,
-                collections: true,
                 publications: true,
-                readingDiaries: true,
             }
         });
-
-        return user;
-    }
+    };
 
     //Procura um usuário com um determinado email
     async getUserByEmail(email: string) {
@@ -40,9 +36,7 @@ export class UserService {
             where: { email },
             include: {
                 avaliations: true,
-                collections: true,
                 publications: true,
-                readingDiaries: true,
             }
         });
 
@@ -69,7 +63,11 @@ export class UserService {
                 avaliations: true,
                 collections: true,
                 publications: true,
-                readingDiaries: true,
+                readingDiaries: {
+                    include: {
+                        book: true,
+                    }
+                },
             }
         });
 
@@ -116,9 +114,7 @@ export class UserService {
                 data: { ...data },
                 include: {
                     avaliations: true,
-                    collections: true,
                     publications: true,
-                    readingDiaries: true,
                 }
             });
 
@@ -148,9 +144,7 @@ export class UserService {
                 data: { ...data, },
                 include: {
                     avaliations: true,
-                    collections: true,
                     publications: true,
-                    readingDiaries: true,
                 }
             });
 

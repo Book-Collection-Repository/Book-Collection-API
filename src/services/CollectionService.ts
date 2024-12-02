@@ -20,7 +20,12 @@ export class CollectionService {
     async listCollectionsOfUser(userId: string) {
         const data = await prisma.collection.findMany({
             where: { userId },
-            include: { books: true }
+            include: { books: {
+                take: 5,
+                include: {
+                    book: true,
+                }
+            } }
         });
 
         return data;
@@ -29,7 +34,7 @@ export class CollectionService {
     //Método para saber se um coleção existe
     async getFindExistsCollection(id: string) {
         const data = await prisma.collection.findUnique({
-            where: {id}
+            where: {id},
         });
 
         return data;
@@ -39,8 +44,14 @@ export class CollectionService {
     async listDataFromCollection(id: string, userId: string) {
         //Busacando dados
         const data = await prisma.collection.findUnique({
-            where: { id },
-            include: { books: true }
+            where: { id }, 
+            include: {
+                books: {
+                    include: {
+                        book: true
+                    }
+                }
+            }
         });
         if (!data) return { success: false, status: 404, message: "Collection with ID not found", data: null };
 

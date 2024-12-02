@@ -26,7 +26,10 @@ export class ReadingDiaryServices {
     async listAllReadingDiariesOfUser(userId: string) {
         const diaries = await prisma.readingDiary.findMany({
             where: { userId },
-            include: {readingDiaryRecords: true}
+            include: {
+                book: true,
+                readingDiaryRecords: true
+            }
         });
 
         return diaries;

@@ -137,7 +137,7 @@ export class BookService {
 
         //Valida que há dados
         if (!allBooks?.items || allBooks.items.length === 0) {
-            return { success: false, message: "No books found for the provided ISBN", data: null };
+            return { success: false, message: "No books found for the provided genres", data: null };
         };
 
         // Adaptar todos os livros retornados
@@ -146,7 +146,7 @@ export class BookService {
         );
 
         //Retornando a resposta
-        return { success: true, message: "Books foun in the external API", data: adaptedBooks };
+        return { success: true, message: "Books found in the external API", data: adaptedBooks };
     };
 
     //Método para procurar na API GOOGLE BOOKS (pesquisa por Autor)
