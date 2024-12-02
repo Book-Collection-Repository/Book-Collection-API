@@ -10,6 +10,7 @@ import { collectionRoutes } from "./collectionRoutes";
 import { avaliationRoutes } from "./avaliationRoutes";
 import { diaryRoutes } from "./readingDiaryRoutes";
 import { publicationRoutes } from "./publicationRoutes";
+import { redisRoutes } from "./redisClientRoutes";
 
 //Configurações
 const routes = Router();
@@ -22,5 +23,6 @@ routes.use("/collection", collectionRoutes);
 routes.use("/avaliation", avaliationRoutes);
 routes.use("/diary", diaryRoutes);
 routes.use("/publication", publicationRoutes);
+routes.use("/redis", redisRoutes);
 
 export {routes};
