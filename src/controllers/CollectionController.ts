@@ -18,9 +18,9 @@ export class CollectionController {
 
     constructor() {
         this.collectionService = new CollectionService();
-    }
+    } 
 
-    //Método para listar os dados de um coleção
+    //Método para listar os dados das coleções de usuários
     async getListCollectionsOfUser(req: Request, res: Response): Promise<Response> {
         try {
             //Pegando id do usuário
