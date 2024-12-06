@@ -45,6 +45,22 @@ export class AvaliationController {
         };
     };
 
+    //Requisição para listar as avaliações de um usuário por token
+    async getListAvaliationsOfUserForToken(req: Request, res: Response): Promise<Response> {
+        try {
+            const idUser = req.id_User;
+
+            //Buscando avaliações feitas pelo usuário
+            const avaliations = await this.avaliationService.findAvaliationsOfUser(idUser);
+            if (avaliations.length <= 0) return res.status(200).json({ message: "User has no reviews" });
+
+            return res.status(200).json({ message: "User has some reviews", avaliations });
+        } catch (error) {
+            console.error("Error return avaliation: ", error);
+            return res.status(500).json({ error: "Internal Server Error" });
+        };
+    };
+
     //Requisição para listar as avaliações de um usuário
     async getListAvaliationsOfUser(req: Request, res: Response): Promise<Response> {
         try {
