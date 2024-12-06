@@ -1,5 +1,6 @@
 //Importações
 import { Request, Response } from "express";
+import { validate } from "uuid";
 
 //Services
 import { PublicationService } from "../services/PublicationService";
@@ -30,10 +31,32 @@ export class PublicationController {
         };
     }
 
-    //Requisição para listar todas as publicações de um usuário
-    async getFindAllPublicationsOfUser(req: Request, res: Response): Promise<Response> {
+    //Requisição para listar todas as publicações de um usuário por token
+    async getFindAllPublicationsOfUserForToken(req: Request, res: Response): Promise<Response> {
         try {
             const idUser = req.id_User; //Pegando o id do usuário
+
+            //Realizando a busca de dados
+            const data = await this.publicationService.findAllPublcationsOfUser(idUser);
+            if (!data.length) return res.status(400).json({ message: "User not publications" });
+
+            //Retornando os dados
+            return res.status(200).json({ message: "Return messages of user", data });
+
+        } catch (error) {
+            console.error("Error return publication: ", error);
+            return res.status(500).json({ error: "Internal Server Error" });
+        };
+    };
+
+    //Requisição para listar todas as publicações de um usuário por token
+    async getFindAllPublicationsOfUser(req: Request, res: Response): Promise<Response> {
+        try {
+            const idUser = req.params.idUser; //Pegando o id do usuário
+
+            //Verificando que o id foi passado
+            if (!idUser || idUser === undefined || idUser === null) return res.status(401).json({ message: "ID of user not informed" });
+            if (!validate(idUser)) return res.status(400).json({ message: "Invalid format ID" });
 
             //Realizando a busca de dados
             const data = await this.publicationService.findAllPublcationsOfUser(idUser);
