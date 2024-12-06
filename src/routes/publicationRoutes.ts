@@ -19,7 +19,8 @@ const likeController = new LikeController();
 
 //Routes
 publicationRoutes.get("/", publicationController.getFindAllLatestPublications.bind(publicationController));
-publicationRoutes.get("/user", authValidationToken, checkingUserExists, publicationController.getFindAllPublicationsOfUser.bind(publicationController));
+publicationRoutes.get("/user", authValidationToken, checkingUserExists, publicationController.getFindAllPublicationsOfUserForToken.bind(publicationController));
+publicationRoutes.get("/list/:idUser", publicationController.getFindAllPublicationsOfUser.bind(publicationController));
 publicationRoutes.get("/:idPublication", checkingPublicationExists, publicationController.getFindDataPublication.bind(publicationController));
 publicationRoutes.post("/", authValidationToken, checkingUserExists, publicationController.createPublication.bind(publicationController));
 publicationRoutes.patch("/:idPublication", checkingPublicationExists, authValidationToken, checkingUserExists, publicationController.updatePublication.bind(publicationController));

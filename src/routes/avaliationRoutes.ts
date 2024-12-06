@@ -16,6 +16,7 @@ const avaliationController = new AvaliationController();
 //Routes
 avaliationRoutes.get("/:idBook", checkingBookExists, avaliationController.getListAvaliationsOfBook.bind(avaliationController));
 avaliationRoutes.get("/user/:idUser", avaliationController.getListAvaliationsOfUser.bind(avaliationController));
+avaliationRoutes.get("/", authValidationToken, checkingUserExists, avaliationController.getListAvaliationsOfUserForToken.bind(avaliationController));
 avaliationRoutes.get("/data/:idAvaliation", authValidationToken, checkingUserExists, avaliationController.getDataAvaliation.bind(avaliationController));
 avaliationRoutes.post("/:idBook", authValidationToken, checkingUserExists, avaliationController.createAvaliationsOfBook.bind(avaliationController));
 avaliationRoutes.patch("/:idAvaliation", authValidationToken, checkingUserExists, avaliationController.updatedAvaliationsOfBook.bind(avaliationController));
