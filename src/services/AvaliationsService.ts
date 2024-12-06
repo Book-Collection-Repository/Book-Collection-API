@@ -21,7 +21,10 @@ export class AvaliationService {
     //Método para listar as avaliações de um usuário
     async findAvaliationsOfUser (userId: string) {
         const avaliationsUser = await prisma.avaliation.findMany({
-            where: {userId}
+            where: {userId},
+            include: {
+                book: true,
+            }
         });
 
         return avaliationsUser;
@@ -30,7 +33,10 @@ export class AvaliationService {
     //Método para listar uma avaliação
     async findAvaliaiton (id: string) {
         const avaliation = await prisma.avaliation.findUnique({
-            where: {id}
+            where: {id},
+            include: {
+                book: true,
+            }
         });
 
         return avaliation;
