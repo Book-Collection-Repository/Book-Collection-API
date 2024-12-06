@@ -10,7 +10,14 @@ export class PublicationService {
     async findAllLatestPublication () {
         const publications = await prisma.publication.findMany({
             orderBy:{createdAt: "desc"},
-            include: {commentaries: true, likes: true}
+            include: {
+                commentaries: {
+                    include: {
+                        user: true,
+                    }
+                }, 
+                likes: true
+            }
         });
 
         return publications;
@@ -20,7 +27,14 @@ export class PublicationService {
     async findAllPublcationsOfUser (userId: string) {
         const publications = await prisma.publication.findMany({
             where: {userId},
-            include: {commentaries: true, likes: true}
+            include: {
+                commentaries: {
+                    include: {
+                        user: true,
+                    }
+                }, 
+                likes: true
+            }
         });
 
         return publications;
@@ -30,7 +44,14 @@ export class PublicationService {
     async findDataPublication (publicationId: string) {
         const data = await prisma.publication.findUnique({
             where: {id: publicationId},
-            include: {commentaries: true, likes: true}
+            include: {
+                commentaries: {
+                    include: {
+                        user: true,
+                    }
+                }, 
+                likes: true
+            }
         });
 
         return data;
