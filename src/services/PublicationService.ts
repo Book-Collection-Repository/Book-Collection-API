@@ -11,6 +11,7 @@ export class PublicationService {
         const publications = await prisma.publication.findMany({
             orderBy:{createdAt: "desc"},
             include: {
+                user: true,
                 commentaries: {
                     include: {
                         user: true,
@@ -28,6 +29,7 @@ export class PublicationService {
         const publications = await prisma.publication.findMany({
             where: {userId},
             include: {
+                user: true,
                 commentaries: {
                     include: {
                         user: true,
@@ -45,6 +47,7 @@ export class PublicationService {
         const data = await prisma.publication.findUnique({
             where: {id: publicationId},
             include: {
+                user: true,
                 commentaries: {
                     include: {
                         user: true,

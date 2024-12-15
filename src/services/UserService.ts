@@ -26,6 +26,8 @@ export class UserService {
             include: {
                 avaliations: true,
                 publications: true,
+                followers: true,
+                following: true,
             }
         });
     };
