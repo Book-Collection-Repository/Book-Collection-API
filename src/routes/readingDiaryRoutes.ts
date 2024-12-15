@@ -18,6 +18,7 @@ const recordController = new ReadingDiaryRecordController();
 
 //Routes
 diaryRoutes.get("/", authValidationToken, checkingUserExists, diaryController.getListReadingDiariesOfUser.bind(diaryController));
+diaryRoutes.get("/:idUser", diaryController.getListReadingDiariesForID.bind(diaryController));
 diaryRoutes.get("/:idDiary", checkingDiaryExists, diaryController.getListDataReadingDiary.bind(diaryController));
 diaryRoutes.post("/:idBook", authValidationToken, checkingUserExists, checkingBookExists, diaryController.createReadingDiaryOfBook.bind(diaryController));
 diaryRoutes.delete("/:idDiary", checkingDiaryExists, authValidationToken, checkingUserExists, diaryController.removeReadingDiaryOfBook.bind(diaryController));
