@@ -64,7 +64,7 @@ export class AvaliationController {
     //Requisição para listar as avaliações de um usuário
     async getListAvaliationsOfUser(req: Request, res: Response): Promise<Response> {
         try {
-            const idUser = req.params.idUser; //Pegando o id do livro
+            const idUser = req.params.idUser; //Pegando o id do usuário
 
             //Verificando que o id foi passado
             if (!idUser || idUser === undefined || idUser === null) return res.status(401).json({ message: "ID of user not informed" });
@@ -76,7 +76,7 @@ export class AvaliationController {
 
             //Buscando avaliações feitas pelo usuário
             const avaliations = await this.avaliationService.findAvaliationsOfUser(idUser);
-            if (avaliations.length <= 0) return res.status(200).json({ message: "User has no reviews" });
+            if (avaliations.length <= 0) return res.status(200).json({ message: "User has no reviews", avaliations });
 
             return res.status(200).json({ message: "User has some reviews", avaliations });
         } catch (error) {

@@ -49,7 +49,7 @@ export class PublicationController {
         };
     };
 
-    //Requisição para listar todas as publicações de um usuário por token
+    //Requisição para listar todas as publicações de um usuário por id
     async getFindAllPublicationsOfUser(req: Request, res: Response): Promise<Response> {
         try {
             const idUser = req.params.idUser; //Pegando o id do usuário
@@ -60,7 +60,7 @@ export class PublicationController {
 
             //Realizando a busca de dados
             const data = await this.publicationService.findAllPublcationsOfUser(idUser);
-            if (!data.length) return res.status(400).json({ message: "User not publications" });
+            if (!data.length) return res.status(200).json({ message: "User not publications", data });
 
             //Retornando os dados
             return res.status(200).json({ message: "Return messages of user", data });

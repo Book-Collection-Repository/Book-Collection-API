@@ -20,17 +20,23 @@ export class FollowController {
     async getListFollowers(req: Request, res: Response): Promise<Response> {
         try {
             //Pegando o id do usuário
-            const userId = req.id_User;
-            
+            const userId = req.params.idUser;
+
+            //Verificando se o id do usuário foi fornecido
+            if (!userId || userId === undefined || userId === null) return res.status(401).json({ message: "ID of user not informed" });
+
+            // Validando que o ID é um UUID válido
+            if (!validate(userId)) return res.status(400).json({ message: "Invalid format ID" });
+
             //Buscando seguidores
             const followers = await this.followService.getUsersFollowerByUser(userId);
 
-            return res.status(200).json({allFollowers: followers});
+            return res.status(200).json({ allFollowers: followers });
 
         } catch (error) {
             // Caso seja um erro desconhecido, retornar erro genérico
             console.error("Error return follow user: ", error);
-            return res.status(500).json({ error: "Internal Server Error" });  
+            return res.status(500).json({ error: "Internal Server Error" });
         }
     };
 
@@ -38,17 +44,23 @@ export class FollowController {
     async getListFollowing(req: Request, res: Response): Promise<Response> {
         try {
             //Pegando o id do usuário
-            const userId = req.id_User;
-            
+            const userId = req.params.idUser;
+
+            //Verificando se o id do usuário foi fornecido
+            if (!userId || userId === undefined || userId === null) return res.status(401).json({ message: "ID of user not informed" });
+
+            // Validando que o ID é um UUID válido
+            if (!validate(userId)) return res.status(400).json({ message: "Invalid format ID" });
+
             //Buscando seguidores
             const followeds = await this.followService.getUsersFollowedByUser(userId);
 
-            return res.status(200).json({allFollowed: followeds});
-            
+            return res.status(200).json({ allFollowed: followeds });
+
         } catch (error) {
             // Caso seja um erro desconhecido, retornar erro genérico
             console.error("Error return follow user: ", error);
-            return res.status(500).json({ error: "Internal Server Error" });  
+            return res.status(500).json({ error: "Internal Server Error" });
         }
     };
 
@@ -60,20 +72,20 @@ export class FollowController {
             const idUserFollowed = req.params.idFriend;
 
             //Validando que o usuário existe
-            if (!validate(idUserFollowed) || idUserFollowed === null || idUserFollowed === undefined) return res.status(400).json({error: "Invalid ID format"});
+            if (!validate(idUserFollowed) || idUserFollowed === null || idUserFollowed === undefined) return res.status(400).json({ error: "Invalid ID format" });
             const userExistWithID = await this.userService.getUserByID(idUserFollowed);
-            if (!userExistWithID) return res.status(404).json({error: "User with ID not found"});
+            if (!userExistWithID) return res.status(404).json({ error: "User with ID not found" });
 
             //Criando a relação entre eles
             const createFollowRelation = await this.followService.followUser(idUser, idUserFollowed);
-            if (!createFollowRelation.success) return res.status(createFollowRelation.status).json({error: createFollowRelation.message});
+            if (!createFollowRelation.success) return res.status(createFollowRelation.status).json({ error: createFollowRelation.message });
 
-            return res.status(createFollowRelation.status).json({message: `User ${idUser} following ${idUserFollowed} sucessesful`, follow: createFollowRelation.message});
+            return res.status(createFollowRelation.status).json({ message: `User ${idUser} following ${idUserFollowed} sucessesful`, follow: createFollowRelation.message });
 
         } catch (error) {
             // Caso seja um erro desconhecido, retornar erro genérico
             console.error("Error return follow user: ", error);
-            return res.status(500).json({ error: "Internal Server Error" });   
+            return res.status(500).json({ error: "Internal Server Error" });
         }
     };
 
@@ -85,20 +97,20 @@ export class FollowController {
             const idUserFollowed = req.params.idFriend;
 
             //Validando que o usuário existe
-            if (!validate(idUserFollowed) || idUserFollowed === null || idUserFollowed === undefined) return res.status(400).json({error: "Invalid ID format"});
+            if (!validate(idUserFollowed) || idUserFollowed === null || idUserFollowed === undefined) return res.status(400).json({ error: "Invalid ID format" });
             const userExistWithID = await this.userService.getUserByID(idUserFollowed);
-            if (!userExistWithID) return res.status(404).json({error: "User with ID not found"});
+            if (!userExistWithID) return res.status(404).json({ error: "User with ID not found" });
 
             //Removendo a relação
             const removeFollowRelation = await this.followService.unfollowUser(idUser, idUserFollowed);
-            if (!removeFollowRelation.success) return res.status(removeFollowRelation.status).json({error: removeFollowRelation.message})
+            if (!removeFollowRelation.success) return res.status(removeFollowRelation.status).json({ error: removeFollowRelation.message })
 
-            return res.status(removeFollowRelation.status).json({message: `User ${idUser} unfollowing ${idUserFollowed} sucessesful`, follow: removeFollowRelation.message});
-        
+            return res.status(removeFollowRelation.status).json({ message: `User ${idUser} unfollowing ${idUserFollowed} sucessesful`, follow: removeFollowRelation.message });
+
         } catch (error) {
             // Caso seja um erro desconhecido, retornar erro genérico
             console.error("Error return unfollow user: ", error);
-            return res.status(500).json({ error: "Internal Server Error" });   
+            return res.status(500).json({ error: "Internal Server Error" });
         }
     };
 };

@@ -11,6 +11,7 @@ import { CollectionService } from "../services/CollectionService";
 import { createCustomCollectionSchema } from "../validators/collectionsValidator";
 import { ZodError } from "zod";
 import { handleZodError } from "../utils/errorHandler";
+import { validate } from "uuid";
 
 //Class
 export class CollectionController {
@@ -20,7 +21,7 @@ export class CollectionController {
         this.collectionService = new CollectionService();
     } 
 
-    //Método para listar os dados das coleções de usuários
+    //Método para listar os dados das coleções de usuários por token
     async getListCollectionsOfUser(req: Request, res: Response): Promise<Response> {
         try {
             //Pegando id do usuário
@@ -30,6 +31,28 @@ export class CollectionController {
             const collection = await this.collectionService.listCollectionsOfUser(idUser);
 
             return res.status(200).json({ collection});
+        } catch (error) {
+            console.error("Error return collection: ", error);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+    };
+
+    //Método para listar os dados das coleções de usuários
+    async getListCollectionsOfUserForID(req: Request, res: Response): Promise<Response> {
+        try {
+            //Pegando id do usuário
+            const idUser = req.params.idUser; 
+            
+            //Verificando se o id do usuário foi fornecido
+            if (!idUser || idUser === undefined || idUser === null) return res.status(401).json({ message: "ID of user not informed" });
+            
+            // Validando que o ID é um UUID válido
+            if (!validate(idUser)) return res.status(400).json({ message: "Invalid format ID" });
+
+            //Procurando collection
+            const collection = await this.collectionService.listCollectionsOfUser(idUser);
+
+            return res.status(200).json({collection});
         } catch (error) {
             console.error("Error return collection: ", error);
             return res.status(500).json({ error: "Internal Server Error" });

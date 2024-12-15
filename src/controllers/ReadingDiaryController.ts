@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 
 //Services
 import { ReadingDiaryServices } from "../services/ReagingDiaryServices";
+import { validate } from "uuid";
 
 //Types
 
@@ -11,7 +12,7 @@ export class ReadingDiaryController {
 
     private readingDiaryServices: ReadingDiaryServices;
 
-    constructor () {
+    constructor() {
         this.readingDiaryServices = new ReadingDiaryServices();
     };
 
@@ -20,12 +21,37 @@ export class ReadingDiaryController {
         try {
             const idUser = req.id_User; //Pegando o id o usuário
 
+            //Verificando se o id do usuário foi fornecido
+            if (!idUser || idUser === undefined || idUser === null) return res.status(401).json({ message: "ID of user not informed" });
+
+            // Validando que o ID é um UUID válido
+            if (!validate(idUser)) return res.status(400).json({ message: "Invalid format ID" });
+
             //Pesquisando os registros de diários de leitura
             const registersDiariesOfUser = await this.readingDiaryServices.listAllReadingDiariesOfUser(idUser);
-            if (registersDiariesOfUser.length <= 0) return res.status(200).json({message: "User doesn't have reading diaries"});  
+            if (registersDiariesOfUser.length <= 0) return res.status(200).json({ message: "User doesn't have reading diaries", data: this.readingDiaryServices });
 
             //Retornando os registros
-            return res.status(200).json({message: "Listing diaries of reading of user", data: registersDiariesOfUser});
+            return res.status(200).json({ message: "Listing diaries of reading of user", data: registersDiariesOfUser });
+
+        } catch (error) {
+            // Caso seja um erro desconhecido, retornar erro genérico
+            console.error("Error return Reading Diaries: ", error);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+    };
+
+    //Requisição para listar todos os diários de leitura
+    async getListReadingDiariesForID(req: Request, res: Response): Promise<Response> {
+        try {
+            const idUser = req.params.idUser; //Pegando o id o usuário
+
+            //Pesquisando os registros de diários de leitura
+            const registersDiariesOfUser = await this.readingDiaryServices.listAllReadingDiariesOfUser(idUser);
+            if (registersDiariesOfUser.length <= 0) return res.status(200).json({ message: "User doesn't have reading diaries", data: registersDiariesOfUser });
+
+            //Retornando os registros
+            return res.status(200).json({ message: "Listing diaries of reading of user", data: registersDiariesOfUser });
 
         } catch (error) {
             // Caso seja um erro desconhecido, retornar erro genérico
@@ -38,13 +64,13 @@ export class ReadingDiaryController {
     async getListDataReadingDiary(req: Request, res: Response): Promise<Response> {
         try {
             const idDiary = req.params.idDiary; //Pegando o id do diário de leitura
-            
+
             //Validando que o diário existe
             const dataDiary = await this.readingDiaryServices.listReadingDiary(idDiary);
-            if (!dataDiary) return res.status(404).json({message: "Reading diary not found"});
+            if (!dataDiary) return res.status(404).json({ message: "Reading diary not found" });
 
             //Retornando o diário de leitura
-            return res.status(200).json({message:"Listing datas of diary of reading", data: dataDiary});
+            return res.status(200).json({ message: "Listing datas of diary of reading", data: dataDiary });
 
         } catch (error) {
             // Caso seja um erro desconhecido, retornar erro genérico
@@ -58,13 +84,13 @@ export class ReadingDiaryController {
         try {
             const idUser = req.id_User; //Pegando o id do usuário;
             const idBook = req.params.idBook; //Pegando o id do livro
-            
+
             //Criando e validando a entidade de reading
             const createReadingDiary = await this.readingDiaryServices.createReadingDiary(idBook, idUser);
-            if (!createReadingDiary.success) return res.status(400).json({message: createReadingDiary.message});
+            if (!createReadingDiary.success) return res.status(400).json({ message: createReadingDiary.message });
 
             //Retornando a criação do reading diary
-            return res.status(201).json({message: createReadingDiary.message, data: createReadingDiary.data});
+            return res.status(201).json({ message: createReadingDiary.message, data: createReadingDiary.data });
         } catch (error) {
             // Caso seja um erro desconhecido, retornar erro genérico
             console.error("Error creating Reading Diaries: ", error);
@@ -77,13 +103,13 @@ export class ReadingDiaryController {
         try {
             const idUser = req.id_User; //Pegando o id do usuário;
             const idDiary = req.params.idDiary; //Pegando o id do diário de leitura
-            
+
             //Criando e validando a entidade de reading
             const removeReadingDiary = await this.readingDiaryServices.removeReadingDiary(idDiary, idUser);
-            if (!removeReadingDiary.success) return res.status(400).json({message: removeReadingDiary.message});
-            
+            if (!removeReadingDiary.success) return res.status(400).json({ message: removeReadingDiary.message });
+
             //Retornando a criação do reading diary
-            return res.status(201).json({message: removeReadingDiary.message});
+            return res.status(201).json({ message: removeReadingDiary.message });
 
         } catch (error) {
             // Caso seja um erro desconhecido, retornar erro genérico
