@@ -59,8 +59,13 @@ export class UserService {
 
     // Procura um usuário com um determinado nome de perfil
     async getUserByProfileName(profileName: string) {
-        const userProfileName = await prisma.user.findUnique({
-            where: { profileName },
+        const userProfileName = await prisma.user.findMany({
+            where: {
+                profileName: {
+                    contains: profileName, // Busca que inclui a string no nome do perfil
+                    mode: 'insensitive',   // Tornando a busca case-insensitive, se necessário
+                },
+            },
             include: {
                 avaliations: true,
                 collections: true,
