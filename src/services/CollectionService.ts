@@ -99,6 +99,9 @@ export class CollectionService {
                     collectionStatus: CollectionStatus.CUSTOM,
                     defaultType: null, // Definido como nulo para coleções customizadas
                 },
+                include: {
+                    books: true
+                }
             });
 
             return { success: true, status: 201, message: "Custom collection created successfully", data: customCollection };
@@ -123,6 +126,7 @@ export class CollectionService {
             const updatedCollection = await prisma.collection.update({
                 where: { id },
                 data: { ...collection },
+                include: {books: true}
             });
 
             return { success: true, status: 200, message: "Collection updated successfully", data: updatedCollection };
