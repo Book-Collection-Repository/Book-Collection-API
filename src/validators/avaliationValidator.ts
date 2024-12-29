@@ -4,8 +4,7 @@ import { z, ZodError } from 'zod';
 //Validação para criação de uma avaliação
 export const createAvaliationSchema = z.object({
     content: z.string()
-        .min(3, { message: 'Avaliation content must be at least 3 characters long' })
-        .max(100, { message: 'Avaliation content at most 100 characters long' }),
+        .min(3, { message: 'Avaliation content must be at least 3 characters long' }),
 
     evaluationGrade: z.number()
         .int({ message: 'Evaluation grade must be an integer' })

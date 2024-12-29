@@ -46,7 +46,8 @@ export class AvaliationService {
     async createAvaliationForBook (data: AvalaitonDTO) {
         try {
             const creteAvaliation = await prisma.avaliation.create({
-                data: {...data}
+                data: {...data},
+                include: {book: true},
             });
 
             return {success: true, message: "Avaliation created for book", data: creteAvaliation};
@@ -66,7 +67,8 @@ export class AvaliationService {
         //Edita o usuário
         const updateAvaliation = await prisma.avaliation.update({
             where:{id},
-            data: {...data}
+            data: {...data},
+            include: {book: true},
         });
 
         //Retorna resposta

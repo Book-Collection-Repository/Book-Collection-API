@@ -16,17 +16,20 @@ import { createAvaliationSchema } from "../validators/avaliationValidator";
 //Utils
 import { handleZodError } from "../utils/errorHandler";
 import { UserService } from "../services/UserService";
+import { GoogleGeminiService } from "../services/GoogleGeminiServices";
 
 //Class
 export class AvaliationController {
     private avaliationService: AvaliationService
     private userService: UserService;
     private bookCollectionService: BookCollectionService;
+    private geminiServices: GoogleGeminiService;
 
     constructor() {
         this.avaliationService = new AvaliationService();
         this.userService = new UserService();
         this.bookCollectionService = new BookCollectionService();
+        this.geminiServices = new GoogleGeminiService();
     };
 
     //Requisição para listar as avaliações de um livro
@@ -117,6 +120,10 @@ export class AvaliationController {
             const userAvaliableBook = await this.avaliationService.userAvaliableBook(idBook, idUser);
             if (userAvaliableBook) return res.status(400).json({ message: "This book has already been rated by the user" });
 
+            //Validando que a avaliação não é de cunho preconceituoso
+            const verifyTextPublication = await this.geminiServices.verifyTextPublication(avaliation.content);
+            if (!verifyTextPublication.sucess) return res.status(400).json({message: verifyTextPublication.message, description: verifyTextPublication.description});
+
             //Criando avaliação
             const createAvaliation = await this.avaliationService.createAvaliationForBook({ ...avaliation, userId: idUser, bookId: idBook });
             if (!createAvaliation.success) return res.status(400).json({ message: createAvaliation.message });
@@ -152,6 +159,10 @@ export class AvaliationController {
             //Validando que a avaliação existe
             const avaliationExistWithID = await this.avaliationService.findAvaliaiton(idAvaliation);
             if (!avaliationExistWithID) return res.status(404).json({ message: "Avaliation not found" });
+
+            //Validando que a avaliação não é de cunho preconceituoso
+            const verifyTextPublication = await this.geminiServices.verifyTextPublication(avaliation.content);
+            if (!verifyTextPublication.sucess) return res.status(400).json({message: verifyTextPublication.message, description: verifyTextPublication.description});
 
             //Editando a avaliação
             const updateAvaliation = await this.avaliationService.updateAvaliationOfBook(idAvaliation, idUser, avaliation);
