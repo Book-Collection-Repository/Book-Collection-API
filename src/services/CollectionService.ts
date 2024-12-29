@@ -21,7 +21,6 @@ export class CollectionService {
         const data = await prisma.collection.findMany({
             where: { userId },
             include: { books: {
-                take: 5,
                 include: {
                     book: true,
                 }
