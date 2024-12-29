@@ -1,6 +1,13 @@
 //Importações
 import { GenerativeModel, GoogleGenerativeAI } from "@google/generative-ai";
 
+//Types
+type objectControl = {
+    status: boolean, 
+    message: string, 
+    description: string
+}
+
 //Class
 export class GoogleGeminiService {
     private geminiKey: GoogleGenerativeAI;
@@ -32,7 +39,9 @@ export class GoogleGeminiService {
 
             // Enviando a requisição e aguardando resposta
             const response = await this.runningQuery(prompt);
-            if (!response.sucess)  return { sucess: response.sucess, message: "Unknown Summay" };
+
+            console.log("Response: ", response)
+            if (!response.sucess) return { sucess: response.sucess, message: "Unknown Summay" };
 
             // Retornando o texto da query gerada
             return { sucess: response.sucess, message: response.message };
@@ -44,7 +53,7 @@ export class GoogleGeminiService {
     };
 
     // Método para gerar um resumo para um livro que não possua resumo
-    async createBookSummary(title: string, author: string) : Promise<{ sucess: boolean, message: string }> {
+    async createBookSummary(title: string, author: string): Promise<{ sucess: boolean, message: string }> {
         try {
             // Formulando a requisição de conteúdo com um prompt claro
             const prompt = `
@@ -68,6 +77,41 @@ export class GoogleGeminiService {
         };
     };
 
+    //Método para avaliar e validar um arquivo de texto
+    async verifyTextPublication(content: string) {
+        try {
+            const prompt = `Avalie esse texto "${content}". Ignore
+            as gírias, jargões ou erros ortográficos apresentados 
+            nesse texto. Avalie o trecho no geral, avaliando se este 
+            é um texto socialmente correto, que não agrida uma minoria 
+            social, tenha caráter discriminatório, racista, homofóbico, 
+            sexista ou qualquer outro tipo de descriminação ou segregação. 
+            Retorne uma resposta em formato json, somente json, com os 
+            atributos de 'status', 'message' e 'description', onde se for 
+            um texto discriminatório retorne um 'status' como 'false', 
+            a 'message' resumindo a descriminação cometida e a 'description' 
+            descrevendo a ação discriminatória que fora cometida. Caso não seja 
+            uma mensagem discriminatória retorne um 'status' com um 'true', a 
+            'message' e a 'description' de sucesso. Ignore outros parâmetros ou 
+            respostas, retorne somente a resposta em json com os atributo 'status', 
+            'message' e 'description'.`;
+
+            // Enviando a requisição e aguardando resposta
+            const response = await this.runningQuery(prompt);
+            if (!response.sucess) return { sucess: response.sucess, message: response.message, description: "An error occurred while generating the query" };
+
+            //Convertendo objeto em json
+            const convertJson: objectControl = this.extractJsonFromMessage(response.message);
+            console.log("ConvertJson: ", convertJson);
+
+            return { sucess: convertJson.status, message: convertJson.message, description: convertJson.description };
+
+        } catch (error) {
+            console.error("Error generating random gender query:", error);
+            return { sucess: false, message: "An error occurred while generating the query", description: "An error occurred while generating the query" };
+        }
+    }
+
     //Função auxiliar, realização da pesquisa pela IA
     private async runningQuery(prompt: string): Promise<{ sucess: boolean, message: string }> {
         try {
@@ -87,6 +131,20 @@ export class GoogleGeminiService {
             console.error("Error generating random gender query:", error);
             return { sucess: false, message: "An error occurred while generating the query" };
         };
+    };
+
+    // Extraindo a parte JSON da string
+    private extractJsonFromMessage = (message: string): objectControl => {
+        try {
+            // Remover os delimitadores ```json e ```
+            const cleanedMessage = message.replace(/```json|```/g, '').trim();
+
+            // Converter para objeto JSON
+            return JSON.parse(cleanedMessage);
+        } catch (error) {
+            console.error('Erro ao parsear a mensagem:', error);
+            return {status: false, message: "Error ao parserar a mensagem", description: "Error ao parsear a mensagem"};
+        }
     };
 
     //Procuar ISBN
