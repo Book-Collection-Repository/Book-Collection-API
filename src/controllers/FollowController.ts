@@ -80,7 +80,7 @@ export class FollowController {
             const createFollowRelation = await this.followService.followUser(idUser, idUserFollowed);
             if (!createFollowRelation.success) return res.status(createFollowRelation.status).json({ error: createFollowRelation.message });
 
-            return res.status(createFollowRelation.status).json({ message: `User ${idUser} following ${idUserFollowed} sucessesful`, follow: createFollowRelation.message });
+            return res.status(createFollowRelation.status).json({ message: `User ${idUser} following ${idUserFollowed} sucessesful`, info: createFollowRelation.message, followed: createFollowRelation.followRelation });
 
         } catch (error) {
             // Caso seja um erro desconhecido, retornar erro genérico

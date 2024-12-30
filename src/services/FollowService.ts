@@ -87,6 +87,9 @@ export class FollowService {
                 followerId,
                 followedId,
             },
+            include: {
+                followed: true,
+            }
         });
 
         // Incrementa os contadores de seguidores e seguidos
