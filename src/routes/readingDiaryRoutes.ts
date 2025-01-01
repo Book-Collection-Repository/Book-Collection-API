@@ -19,12 +19,13 @@ const recordController = new ReadingDiaryRecordController();
 //Routes
 diaryRoutes.get("/", authValidationToken, checkingUserExists, diaryController.getListReadingDiariesOfUser.bind(diaryController));
 diaryRoutes.get("/:idUser", diaryController.getListReadingDiariesForID.bind(diaryController));
-diaryRoutes.get("/:idDiary", checkingDiaryExists, diaryController.getListDataReadingDiary.bind(diaryController));
+diaryRoutes.get("/data/:idDiary", checkingDiaryExists, diaryController.getListDataReadingDiary.bind(diaryController));
 diaryRoutes.post("/:idBook", authValidationToken, checkingUserExists, checkingBookExists, diaryController.createReadingDiaryOfBook.bind(diaryController));
+diaryRoutes.patch("/visibility/:idDiary", checkingDiaryExists, authValidationToken, checkingUserExists, diaryController.updateVisibilityReadingDiary.bind(diaryController));
 diaryRoutes.delete("/:idDiary", checkingDiaryExists, authValidationToken, checkingUserExists, diaryController.removeReadingDiaryOfBook.bind(diaryController));
 
 diaryRoutes.get("/record/:idDiary", checkingDiaryExists, recordController.getListRecordOfReadingDiary.bind(recordController));
-diaryRoutes.get("/record/:idRecord", recordController.getDataRecordOfReadingDiary.bind(recordController));
+diaryRoutes.get("/record/data/:idRecord", recordController.getDataRecordOfReadingDiary.bind(recordController));
 diaryRoutes.post("/record/:idDiary", checkingDiaryExists, authValidationToken, checkingUserExists, recordController.createDataRecordOfReadingDiary.bind(recordController));
 diaryRoutes.put("/record/:idRecord", authValidationToken, checkingUserExists, recordController.updateDataRecordOfReadingDiary.bind(recordController));
 diaryRoutes.delete("/record/:idRecord", authValidationToken, checkingUserExists, recordController.deleteDataRecordOfReadingDiary.bind(recordController));
