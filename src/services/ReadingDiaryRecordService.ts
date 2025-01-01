@@ -3,6 +3,7 @@ import { prisma } from "./prisma";
 
 //Services
 import { ReadingDiaryServices } from "./ReagingDiaryServices";
+import { GoogleGeminiService } from "./GoogleGeminiServices";
 
 //Types
 import { RecordDiaryDTO } from "../types/readingDiaryRecordTypes";
@@ -11,9 +12,11 @@ import { RecordDiaryDTO } from "../types/readingDiaryRecordTypes";
 export class ReadingDiaryRecordServices {
 
     private readingDiaryService: ReadingDiaryServices;
+    private geminiServices: GoogleGeminiService;
 
     constructor() {
         this.readingDiaryService = new ReadingDiaryServices();
+        this.geminiServices = new GoogleGeminiService();
     };
 
     //Método para listar todos os registros de um diário de leitura
@@ -49,6 +52,10 @@ export class ReadingDiaryRecordServices {
             //Verificar se o usuário é o responsável por esse diário de leitura
             const userIsResponsible = await this.readingDiaryService.userIsResponsibleForReadingDiary(diaryId, userId);
             if (!userIsResponsible) return { success: false, message: "User not responsible for reading diary" };
+
+            //Verificando o conteúdo do registro de leitura
+            const verifyContent = await this.geminiServices.verifyTextPublication(data.content);
+            if (!verifyContent.sucess) return { success: verifyContent.sucess, message: verifyContent.message, description: verifyContent.description };
 
             //Criando o registro
             const createRecord = await prisma.readingDiaryRecord.create({
