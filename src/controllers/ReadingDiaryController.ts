@@ -1,9 +1,13 @@
 //Importações
+import { EntityVisibility } from "@prisma/client";
 import { Request, Response } from "express";
 
 //Services
 import { ReadingDiaryServices } from "../services/ReagingDiaryServices";
 import { validate } from "uuid";
+
+//Validação
+import { updateVisibilitySchema } from "../validators/recordsDiaryValidator";
 
 //Types
 
@@ -82,18 +86,67 @@ export class ReadingDiaryController {
     //Requisição criar um diário de leitura
     async createReadingDiaryOfBook(req: Request, res: Response): Promise<Response> {
         try {
-            const idUser = req.id_User; //Pegando o id do usuário;
-            const idBook = req.params.idBook; //Pegando o id do livro
-
-            //Criando e validando a entidade de reading
-            const createReadingDiary = await this.readingDiaryServices.createReadingDiary(idBook, idUser);
-            if (!createReadingDiary.success) return res.status(400).json({ message: createReadingDiary.message });
-
-            //Retornando a criação do reading diary
-            return res.status(201).json({ message: createReadingDiary.message, data: createReadingDiary.data });
+            const idUser = req.id_User; // Pegando o id do usuário
+            const idBook = req.params.idBook; // Pegando o id do livro
+    
+            // Validando o corpo da requisição
+            const validationResult = updateVisibilitySchema.safeParse(req.body);
+            if (!validationResult.success) {
+                return res.status(400).json({
+                    message: "Dados inválidos",
+                    errors: validationResult.error.errors,
+                });
+            }
+    
+            // Pegando a visibilidade (ou usando o padrão PRIVATE)
+            const visibility = validationResult.data.visibility ?? EntityVisibility.PRIVATE;
+    
+            // Criando e validando a entidade de ReadingDiary
+            const createReadingDiary = await this.readingDiaryServices.createReadingDiary(idBook, idUser, visibility);
+            if (!createReadingDiary.success) {
+                return res.status(400).json({ message: createReadingDiary.message });
+            }
+    
+            // Retornando a criação do ReadingDiary
+            return res.status(201).json({
+                message: createReadingDiary.message,
+                data: createReadingDiary.data,
+            });
         } catch (error) {
             // Caso seja um erro desconhecido, retornar erro genérico
             console.error("Error creating Reading Diaries: ", error);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+    }
+
+    //Requisição para atualizar a visiblidade do diário de leitura
+    async updateVisibilityReadingDiary(req: Request, res: Response): Promise<Response> {
+        try {
+            //Buscando dados da requisição
+            const userId = req.id_User;
+            const diaryId = req.params.idDiary;
+            
+            // Validando os dados recebidos
+            const validationResult = updateVisibilitySchema.safeParse(req.body);
+            if (!validationResult.success) {
+                return res.status(400).json({
+                    message: "Dados inválidos",
+                    errors: validationResult.error.errors,
+                });
+            }
+
+            const data: EntityVisibility = validationResult.data.visibility;
+
+            //Chamando a dunção de atualização
+            const updateFuction = await this.readingDiaryServices.updateVisibilityOfDiary(diaryId, userId, data);
+            if (!updateFuction.success) return res.status(400).json({ message: updateFuction.message });
+
+            //Retornando dados
+            return res.status(200).json({ message: updateFuction.message, data: updateFuction.data });
+
+        } catch (error) {
+            // Caso seja um erro desconhecido, retornar erro genérico
+            console.error("Error updatting Reading Diaries: ", error);
             return res.status(500).json({ error: "Internal Server Error" });
         }
     };
