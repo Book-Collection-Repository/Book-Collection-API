@@ -69,9 +69,10 @@ export class ReadingDiaryRecordController {
             const idDiary = req.params.idDiary; //Pegando o id do diáiro
             const idUser = req.id_User; //Pegando o id do usuário
             const data: RecordDiaryDTO = createRecordSchema.parse(req.body); //Validando o que vem do body
+            
             //Criando objeto
             const dataRecords = await this.readingDiaryRecordService.createRecordOfReadingDiary(idDiary, idUser, data);
-            if (!dataRecords.success) return res.status(400).json({ message: dataRecords.message })
+            if (!dataRecords.success) return res.status(400).json({ message: dataRecords.message, description: dataRecords.description })
 
             //Retornando
             return res.status(201).json({ message: dataRecords.message, data: dataRecords.data });
