@@ -288,7 +288,7 @@ export class UserController {
             //Salvando no banco de dados
             const userUpdatedImage = await this.userService.updatePhotoUser(idUser, `images/${requestImage.filename}`);
 
-            return res.status(201).json({ massage: "Profile picture added", image: requestImage.filename, user: userUpdatedImage });
+            return res.status(201).json({ massage: "Profile picture added", image: requestImage.filename, data: userUpdatedImage });
 
         } catch (error) {
             // Caso seja um erro desconhecido, retornar erro genérico
