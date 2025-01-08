@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 
 //Services
 import { CommentService } from "../services/CommentService";
+import { GoogleGeminiService } from "../services/GoogleGeminiServices";
 
 //Validator
 import { createCommentSchema } from "../validators/commentValidator";
@@ -10,9 +11,11 @@ import { createCommentSchema } from "../validators/commentValidator";
 //Class
 export class CommentController {
     private commentService: CommentService;
+    private geminiService: GoogleGeminiService;
 
     constructor () {
         this.commentService = new CommentService();
+        this.geminiService = new GoogleGeminiService();
     };
 
     //Método para criar um comentário
@@ -21,6 +24,10 @@ export class CommentController {
             const idUser = req.id_User; //Pegando o id do usuário
             const idPublication = req.params.idPublication; //Pegando o id da publicação 
             const data = createCommentSchema.parse(req.body); //Pegando o conteúdo da mensagem
+
+            //Validando conteúdo do comnetário
+            const verifyContentCommentary = await this.geminiService.verifyTextPublication(data.content);
+            if (!verifyContentCommentary.sucess) return res.status(400).json({message: verifyContentCommentary.message, description: verifyContentCommentary.description});
 
             //Enviando os dados
             const createData = await this.commentService.createComment(idPublication, idUser, data.content);

@@ -7,13 +7,16 @@ import { PublicationService } from "../services/PublicationService";
 
 //Validator
 import { createPublicationSchema } from "../validators/publicationValidator";
+import { GoogleGeminiService } from "../services/GoogleGeminiServices";
 
 //Class
 export class PublicationController {
     private publicationService: PublicationService;
+    private geminiService: GoogleGeminiService;
 
     constructor() {
         this.publicationService = new PublicationService();
+        this.geminiService = new GoogleGeminiService();
     };
 
     //Requisição para listar todas as publicações realizada recentemente
@@ -95,12 +98,16 @@ export class PublicationController {
             const idUser = req.id_User; //Pegando o id do usuário
             const data = createPublicationSchema.parse(req.body); //Pegando o conteúdo da mensagem
 
+            //Validando a informação recebida
+            const validationData = await this.geminiService.verifyTextPublication(data.content);
+            if (!validationData.sucess) return res.status(400).json({ message: validationData.message, description: validationData.description });
+
             //Enviando os dados
             const createData = await this.publicationService.createPublication(idUser, data.content);
-            if (!createData.success) return res.status(404).json({message: createData.message});
+            if (!createData.success) return res.status(404).json({ message: createData.message });
 
             //Retornando os dados
-            return res.status(201).json({message: createData.message, data: createData.data});
+            return res.status(201).json({ message: createData.message, data: createData.data });
 
         } catch (error) {
             console.error("Error create publication: ", error);
@@ -115,12 +122,16 @@ export class PublicationController {
             const idPublication = req.params.idPublication; //Pegando o id da publicação
             const data = createPublicationSchema.parse(req.body); //Pegando o conteúdo da mensagem
 
+            //Validando a informação recebida
+            const validationData = await this.geminiService.verifyTextPublication(data.content);
+            if (!validationData.sucess) return res.status(400).json({ message: validationData.message, description: validationData.description });
+
             //Enviando os dados
             const updateData = await this.publicationService.updatePublication(idPublication, idUser, data.content);
-            if (!updateData.success) return res.status(400).json({message: updateData.message});
+            if (!updateData.success) return res.status(400).json({ message: updateData.message });
 
             //Retornando os dados
-            return res.status(200).json({message: updateData.message, data: updateData.data});
+            return res.status(200).json({ message: updateData.message, data: updateData.data });
 
         } catch (error) {
             console.error("Error update publication: ", error);
@@ -136,10 +147,10 @@ export class PublicationController {
 
             //Enviando os dados
             const removeData = await this.publicationService.removePublication(idPublication, idUser);
-            if (!removeData.success) return res.status(400).json({message: removeData.message});
+            if (!removeData.success) return res.status(400).json({ message: removeData.message });
 
             //Retornando os dados
-            return res.status(200).json({message: removeData.message});
+            return res.status(200).json({ message: removeData.message });
 
         } catch (error) {
             console.error("Error remove publication: ", error);

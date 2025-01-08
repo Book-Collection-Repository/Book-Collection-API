@@ -23,7 +23,7 @@ export class LikeController {
             if (!createLike.success) return res.status(404).json({ message: createLike.message });
 
             //Retornando os dados
-            return res.status(201).json({ message: createLike.message });
+            return res.status(201).json({ message: createLike.message, data: createLike.data });
 
         } catch (error) {
             console.error("Error liked publication: ", error);
@@ -42,7 +42,7 @@ export class LikeController {
             if (!removeLike.success) return res.status(404).json({ message: removeLike.message });
 
             //Retornando os dados
-            return res.status(201).json({ message: removeLike.message });
+            return res.status(200).json({ message: removeLike.message });
 
         } catch (error) {
             console.error("Error liked publication: ", error);
