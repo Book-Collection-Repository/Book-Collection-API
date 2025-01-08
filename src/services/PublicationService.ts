@@ -66,6 +66,15 @@ export class PublicationService {
             const publication = await prisma.publication.create({
                 data: {
                     content, userId,
+                },
+                include: {
+                    user: true,
+                    commentaries: {
+                        include: {
+                            user: true,
+                        }
+                    }, 
+                    likes: true
                 }
             });
     
@@ -86,7 +95,16 @@ export class PublicationService {
             //Realiza a atulização
             const publication = await prisma.publication.update({
                 where: {id: publicationId},
-                data: {content}
+                data: {content},
+                include: {
+                    user: true,
+                    commentaries: {
+                        include: {
+                            user: true,
+                        }
+                    }, 
+                    likes: true
+                }
             });
 
             //Retorna o dado
@@ -106,6 +124,15 @@ export class PublicationService {
                 where: { id: publicationId },
                 data: {
                     likesCount: increment ? { increment: 1 } : { decrement: 1 }
+                },
+                include: {
+                    user: true,
+                    commentaries: {
+                        include: {
+                            user: true,
+                        }
+                    }, 
+                    likes: true
                 }
             });
 
@@ -125,6 +152,15 @@ export class PublicationService {
                 where: { id: publicationId },
                 data: {
                     commentariesCount: increment ? { increment: 1 } : { decrement: 1 }
+                },
+                include: {
+                    user: true,
+                    commentaries: {
+                        include: {
+                            user: true,
+                        }
+                    }, 
+                    likes: true
                 }
             });
 

@@ -28,7 +28,10 @@ export class CommentService {
         try {
             //Criando comentário
             const comment = await prisma.comment.create({
-                data:{content, userId, publicationId}
+                data:{content, userId, publicationId},
+                include: {
+                    user: true,
+                }
             });
       
             //Atualiza a quantidade de comentário da publicação
