@@ -55,6 +55,13 @@ enum EntityVisibility {
   PUBLIC
 }
 
+// Enumeração para definir as ações das notificações
+enum ActionNotification {
+  SEE_CHAT
+  SEE_PUBLICATION
+  SEE_USER
+}
+
 // ========== MODELO DO BANCO DE DADOS =========
 
 //Entidade User
@@ -70,37 +77,74 @@ model User {
   version        Int     @default(0)
 
   //Relacionamentos
-  messagesSent     Message[]      @relation("UserMessagesSent")
-  messagesReceived Message[]      @relation("UserMessagesReceived")
-  followers        Follow[]       @relation("UserFollowers") // Usuários que seguem este usuário
-  following        Follow[]       @relation("UserFollowing") // Usuários que este usuário está seguindo
-  collections      Collection[]   @relation("UserCollection")
-  avaliations      Avaliation[]
-  readingDiaries   ReadingDiary[]
-  publications     Publication[]
-  commentaries     Comment[]
-  likes            Like[]
+  messagesSent          Message[]      @relation("UserMessagesSent")
+  chatsSent             Chat[]         @relation("UserChatsSent")
+  chatsReceived         Chat[]         @relation("UserChatsReceived")
+  notificationsSent     Notification[] @relation("UserNotificationsSent")
+  notificationsReceived Notification[] @relation("UserNotificationsReceived")
+  followers             Follow[]       @relation("UserFollowers") // Usuários que seguem este usuário
+  following             Follow[]       @relation("UserFollowing") // Usuários que este usuário está seguindo
+  collections           Collection[]   @relation("UserCollection")
+  avaliations           Avaliation[]
+  readingDiaries        ReadingDiary[]
+  publications          Publication[]
+  commentaries          Comment[]
+  likes                 Like[]
 
   //Data de criação
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-//Entidade Message
+//Entidade de notificação
+model Notification {
+  id            String             @id @default(uuid())
+  content       String // Mensagem da notificação
+  receiverId    String
+  senderId      String
+  action        ActionNotification @default(SEE_USER)
+  chatId        String?
+  publicationId String?
+
+  // Relacionamentos
+  sender   User @relation("UserNotificationsSent", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("UserNotificationsReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  // Data de criação
+  createdAt DateTime @default(now())
+}
+
+//Entidade de Chat
+model Chat {
+  id         String    @id @default(uuid())
+  senderId   String
+  receiverId String
+  messages   Message[]
+
+  // Relacionamentos
+  sender   User @relation("UserChatsSent", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("UserChatsReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  // Data de criação
+  createdAt DateTime @default(now())
+
+  @@unique([senderId, receiverId])
+}
+
+//Entidade de Message
 model Message {
   id             String         @id @default(uuid())
   content        String
-  viewing        ViewingStatus  @default(UNSEEN) // Utilizando Enum para visualizar
-  shippingStatus ShippingStatus @default(PENDING) // Utilizando Enum para status de envio
+  viewingStatus  ViewingStatus  @default(UNSEEN) // Enum para status de visualização
+  shippingStatus ShippingStatus @default(PENDING) // Enum para status de envio
+  chatId         String         @default("temp_chat_id")
+  senderId       String
 
-  //Relacionamentos
-  senderId String
-  sender   User   @relation("UserMessagesSent", fields: [senderId], references: [id], onDelete: Cascade)
+  // Relacionamentos
+  chat   Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender User @relation("UserMessagesSent", fields: [senderId], references: [id], onDelete: Cascade)
 
-  receiverId String
-  receiver   User   @relation("UserMessagesReceived", fields: [receiverId], references: [id], onDelete: Cascade)
-
-  //Data de criação
+  // Data de criação
   createdAt DateTime @default(now())
 }
 
@@ -144,7 +188,7 @@ model Book {
 model Collection {
   id               String           @id @default(uuid())
   collectionStatus CollectionStatus
-  defaultType      DefaultType?     // Aplicável apenas se for do tipo DEFAULT
+  defaultType      DefaultType? // Aplicável apenas se for do tipo DEFAULT
   description      String?
   title            String
   visibility       EntityVisibility @default(PUBLIC) // Se é visível para outros ou não
