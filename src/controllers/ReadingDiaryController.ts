@@ -8,6 +8,7 @@ import { validate } from "uuid";
 
 //Validação
 import { updateVisibilitySchema } from "../validators/recordsDiaryValidator";
+import { ReadingDiariesCacheServices } from "../services/cacheClient/ReadingDiariesCacheServices";
 
 //Types
 
@@ -15,9 +16,11 @@ import { updateVisibilitySchema } from "../validators/recordsDiaryValidator";
 export class ReadingDiaryController {
 
     private readingDiaryServices: ReadingDiaryServices;
+    private cacheServices: ReadingDiariesCacheServices;
 
     constructor() {
         this.readingDiaryServices = new ReadingDiaryServices();
+        this.cacheServices = new ReadingDiariesCacheServices();
     };
 
     //Requisição para listar todos os diários de leitura
@@ -31,10 +34,20 @@ export class ReadingDiaryController {
             // Validando que o ID é um UUID válido
             if (!validate(idUser)) return res.status(400).json({ message: "Invalid format ID" });
 
+            //Busca no cache
+            const diariesCache = await this.cacheServices.getListAllReadingDiaries(idUser);
+            if (diariesCache) return res.status(200).json({ message: "Listing diaries of reading of user", data: diariesCache });
+
             //Pesquisando os registros de diários de leitura
             const registersDiariesOfUser = await this.readingDiaryServices.listAllReadingDiariesOfUser(idUser);
-            if (registersDiariesOfUser.length <= 0) return res.status(200).json({ message: "User doesn't have reading diaries", data: this.readingDiaryServices });
+            if (registersDiariesOfUser.length <= 0) {
+                await this.cacheServices.saveAllReadingDiaries(idUser, registersDiariesOfUser);
+                return res.status(200).json({ message: "User doesn't have reading diaries",  });
+            }    
 
+            //Salvando dados no cache
+            await this.cacheServices.saveAllReadingDiaries(idUser, registersDiariesOfUser);
+            
             //Retornando os registros
             return res.status(200).json({ message: "Listing diaries of reading of user", data: registersDiariesOfUser });
 

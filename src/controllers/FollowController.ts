@@ -5,15 +5,18 @@ import { validate } from "uuid";
 //Service
 import { FollowService } from "../services/FollowService";
 import { UserService } from "../services/UserService";
+import { FollwersCacheServices } from "../services/cacheClient/FollwersCacheServices";
 
 //Class
 export class FollowController {
     private followService: FollowService;
     private userService: UserService;
+    private cacheService: FollwersCacheServices;
 
     constructor() {
         this.followService = new FollowService();
         this.userService = new UserService();
+        this.cacheService = new FollwersCacheServices();
     }
 
     //Lista seguidores de um usuário A
@@ -27,9 +30,12 @@ export class FollowController {
 
             // Validando que o ID é um UUID válido
             if (!validate(userId)) return res.status(400).json({ message: "Invalid format ID" });
-
+            
             //Buscando seguidores
             const followers = await this.followService.getUsersFollowerByUser(userId);
+
+            //Salvando informações no cache
+            await this.cacheService.saveFollowers(userId, followers);
 
             return res.status(200).json({ allFollowers: followers });
 
@@ -54,6 +60,9 @@ export class FollowController {
 
             //Buscando seguidores
             const followeds = await this.followService.getUsersFollowedByUser(userId);
+
+            //Salvando informações no cache
+            await this.cacheService.saveFolloweds(userId, followeds);
 
             return res.status(200).json({ allFollowed: followeds });
 

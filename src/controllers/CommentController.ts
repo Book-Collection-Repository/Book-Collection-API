@@ -26,8 +26,8 @@ export class CommentController {
             const data = createCommentSchema.parse(req.body); //Pegando o conteúdo da mensagem
 
             //Validando conteúdo do comnetário
-            const verifyContentCommentary = await this.geminiService.verifyTextPublication(data.content);
-            if (!verifyContentCommentary.sucess) return res.status(400).json({message: verifyContentCommentary.message, description: verifyContentCommentary.description});
+            // const verifyContentCommentary = await this.geminiService.verifyTextPublication(data.content);
+            // if (!verifyContentCommentary.sucess) return res.status(400).json({message: verifyContentCommentary.message, description: verifyContentCommentary.description});
 
             //Enviando os dados
             const createData = await this.commentService.createComment(idPublication, idUser, data.content);

@@ -6,6 +6,7 @@ import { CustomCollectionDTO } from "../types/collectionTypes";
 
 //Services
 import { CollectionService } from "../services/CollectionService";
+import { CollectionCacheServices } from "../services/cacheClient/CollectionCacheServices";
 
 //Validators
 import { createCustomCollectionSchema } from "../validators/collectionsValidator";
@@ -16,9 +17,11 @@ import { validate } from "uuid";
 //Class
 export class CollectionController {
     private collectionService: CollectionService;
+    private cacheServices: CollectionCacheServices;
 
     constructor() {
         this.collectionService = new CollectionService();
+        this.cacheServices= new CollectionCacheServices();
     } 
 
     //Método para listar os dados das coleções de usuários por token
@@ -27,8 +30,15 @@ export class CollectionController {
             //Pegando id do usuário
             const idUser = req.id_User;
 
+            //Buscandado dados no cache
+            const dataCache = await this.cacheServices.getListAllCollections(idUser);
+            if (dataCache) return res.status(200).json({ collection: dataCache});
+
             //Procurando collection
             const collection = await this.collectionService.listCollectionsOfUser(idUser);
+
+            //Salvando dados no cache
+            await this.cacheServices.saveAllCollections(idUser, collection);
 
             return res.status(200).json({ collection});
         } catch (error) {
