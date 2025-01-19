@@ -81,6 +81,17 @@ export class UserService {
         return userProfileName;
     };
 
+    //Procura um usuário que um nome especídico
+    async getUserByDetminedProfileName(profileName: string) {
+        const userProfileName = await prisma.user.findUnique({
+            where: {
+                profileName: profileName
+            }
+        });
+
+        return userProfileName;
+    }
+
     //Procurando um usuário com um determinado nome de perfil, mas com id diferente
     async getUserByProfileNameButNotID(profileName: string, id: string) {
         const data = await prisma.user.findFirst({
@@ -96,7 +107,7 @@ export class UserService {
     // Validando se existe um usuário com o mesmo e-mail ou nome de perfil
     async validateUserInformation(email: string, profileName: string): Promise<string | null> {
         const emailExists = await this.getUserByEmail(email);
-        const profileNameExists = await this.getUserByProfileName(profileName);
+        const profileNameExists = await this.getUserByDetminedProfileName(profileName);
 
         if (emailExists) return 'Email already exists';
         if (profileNameExists) return 'Profile name already exists';

@@ -1,10 +1,16 @@
 //Importações
 import { prisma } from "./prisma";
 
-//Types
+//Services
+import { PublicationCacheServices } from "./cacheClient/PublicationCacheServices";
 
 //Class
 export class PublicationService {
+    private cacheServices: PublicationCacheServices;
+
+    constructor () {
+        this.cacheServices = new PublicationCacheServices();
+    }
 
     //Método para lsitar todas publicações realizadas recentemente
     async findAllLatestPublication () {
@@ -136,6 +142,9 @@ export class PublicationService {
                 }
             });
 
+            //Atualiza os dado no cache
+            await this.updatingActionsInPublication(updatedPublication.userId);
+
             return { success: true, message: "Publication like count updated", data: updatedPublication };
         
         } catch (error) {
@@ -163,6 +172,9 @@ export class PublicationService {
                     likes: true
                 }
             });
+
+            //Atualiza os dado no cache
+            await this.updatingActionsInPublication(updatedPublication.userId);
 
             return { success: true, message: "Publication comment count updated", data: updatedPublication };
         
@@ -204,4 +216,18 @@ export class PublicationService {
         //Retorna mensagem final
         return {success: true, message: "User is responsible"};
     };
+
+    //Função auxiliar para atualizar curtidas e comentários de uma publicação no cache
+    private async updatingActionsInPublication (userId:string) {
+        try {
+            //Buscando todas as publicações do usuário
+            const data = await this.findAllPublcationsOfUser(userId);
+
+            //Salvando no cache
+            this.cacheServices.saveAllPublications(userId, data);
+
+        } catch (error) {
+            console.log("Not is possible updating publication: ", error);
+        }
+    }
 };

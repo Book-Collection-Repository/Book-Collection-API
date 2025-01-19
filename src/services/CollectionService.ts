@@ -125,7 +125,13 @@ export class CollectionService {
             const updatedCollection = await prisma.collection.update({
                 where: { id },
                 data: { ...collection },
-                include: {books: true}
+                include: {
+                    books: {
+                        include: {
+                            book: true,
+                        }
+                    }
+                }
             });
 
             return { success: true, status: 200, message: "Collection updated successfully", data: updatedCollection };

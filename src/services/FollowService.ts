@@ -1,4 +1,5 @@
 //Importações
+import { FollwersCacheServices } from "./cacheClient/FollwersCacheServices";
 import { prisma } from "./prisma";
 import { UserService } from "./UserService";
 
@@ -6,9 +7,11 @@ import { UserService } from "./UserService";
 export class FollowService {
 
     private userService: UserService;
+    private cacheService: FollwersCacheServices;
 
     constructor() {
         this.userService = new UserService();
+        this.cacheService = new FollwersCacheServices();
     }
 
     //Listar todos os usuários que um usuário A segue
@@ -95,6 +98,9 @@ export class FollowService {
         // Incrementa os contadores de seguidores e seguidos
         await this.userService.incrementFollowingCount(followerId);
         await this.userService.incrementFollowersCount(followedId);
+        
+        //Atualizar cache
+        await this.updatedCacheFollowers(followerId);
 
         // Retorna sucesso com a relação criada
         return { success: true, status: 201, message: "Follow created successfully", followRelation };
@@ -122,6 +128,22 @@ export class FollowService {
         await this.userService.decrementFollowingCount(followerId);
         await this.userService.decrementFollowersCount(followedId);
 
+        //Atualizar cache
+        await this.updatedCacheFollowers(followerId);
+
         return { success: true, status: 200, message: "Follow-up relationship successfully removed." };
+    }
+
+    //Função privada para inteirar os seguidores de um usuário
+    private async updatedCacheFollowers (followerId: string) {
+        try {
+            //Buscando os seguidores do usuário
+            const followers = await this.getUsersFollowerByUser(followerId);
+
+            //Salvando os dados no cache
+            await this.cacheService.saveFollowers(followerId, followers);
+        } catch (error) {
+            console.error("Error in updating followers of user: ", error);
+        }
     }
 };

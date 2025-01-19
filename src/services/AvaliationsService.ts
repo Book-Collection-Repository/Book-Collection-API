@@ -12,7 +12,10 @@ export class AvaliationService {
     //Método para lsitar as avaliações de um livro
     async findAvaliationsOfBook (bookId: string) {
         const avaliationsBook = await prisma.avaliation.findMany({
-            where:{bookId}
+            where:{bookId},
+            include: {
+                user: true,
+            }
         });
 
         return avaliationsBook;
