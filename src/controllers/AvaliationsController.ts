@@ -139,8 +139,8 @@ export class AvaliationController {
             if (userAvaliableBook) return res.status(400).json({ message: "This book has already been rated by the user" });
 
             //Validando que a avaliação não é de cunho preconceituoso
-            //const verifyTextPublication = await this.geminiServices.verifyTextPublication(avaliation.content);
-            //if (!verifyTextPublication.sucess) return res.status(400).json({ message: verifyTextPublication.message, description: verifyTextPublication.description });
+            const verifyTextPublication = await this.geminiServices.verifyTextPublication(avaliation.content);
+            if (!verifyTextPublication.sucess) return res.status(400).json({ message: verifyTextPublication.message, description: verifyTextPublication.description });
 
             //Criando avaliação
             const createAvaliation = await this.avaliationService.createAvaliationForBook({ ...avaliation, userId: idUser, bookId: idBook });

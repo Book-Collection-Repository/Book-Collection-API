@@ -109,8 +109,8 @@ export class PublicationController {
             const data = createPublicationSchema.parse(req.body); //Pegando o conteúdo da mensagem
 
             //Validando a informação recebida
-            // const validationData = await this.geminiService.verifyTextPublication(data.content);
-            // if (!validationData.sucess) return res.status(400).json({ message: validationData.message, description: validationData.description });
+            const validationData = await this.geminiService.verifyTextPublication(data.content);
+            if (!validationData.sucess) return res.status(400).json({ message: validationData.message, description: validationData.description });
 
             //Enviando os dados
             const createData = await this.publicationService.createPublication(idUser, data.content);
