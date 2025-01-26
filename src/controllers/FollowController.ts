@@ -6,17 +6,21 @@ import { validate } from "uuid";
 import { FollowService } from "../services/FollowService";
 import { UserService } from "../services/UserService";
 import { FollwersCacheServices } from "../services/cacheClient/FollwersCacheServices";
+import { RealtimeServices } from "../services/RealtimeServices";
+import { createNotificationDTO } from "../types/NotificationTypes";
 
 //Class
 export class FollowController {
     private followService: FollowService;
     private userService: UserService;
     private cacheService: FollwersCacheServices;
+    private notificationService: RealtimeServices;
 
     constructor() {
         this.followService = new FollowService();
         this.userService = new UserService();
         this.cacheService = new FollwersCacheServices();
+        this.notificationService = new RealtimeServices();
     }
 
     //Lista seguidores de um usuário A
@@ -88,6 +92,17 @@ export class FollowController {
             //Criando a relação entre eles
             const createFollowRelation = await this.followService.followUser(idUser, idUserFollowed);
             if (!createFollowRelation.success) return res.status(createFollowRelation.status).json({ error: createFollowRelation.message });
+
+            //Criando notificação
+            const notification: createNotificationDTO = {
+                senderId: idUser,
+                receiverId: idUserFollowed,
+                action: "SEE_USER",
+                content: `User ${idUser} is following you`,
+                };
+
+            //Enviando notificação
+            await this.notificationService.createNotification(notification);
 
             return res.status(createFollowRelation.status).json({ message: `User ${idUser} following ${idUserFollowed} sucessesful`, info: createFollowRelation.message, followed: createFollowRelation.followRelation });
 

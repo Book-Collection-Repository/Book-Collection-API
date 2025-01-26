@@ -4,18 +4,26 @@ import { Request, Response } from "express";
 //Services
 import { CommentService } from "../services/CommentService";
 import { GoogleGeminiService } from "../services/GoogleGeminiServices";
+import { RealtimeServices } from "../services/RealtimeServices";
 
 //Validator
 import { createCommentSchema } from "../validators/commentValidator";
+import { createNotificationDTO } from "../types/NotificationTypes";
+import { Publication } from "@prisma/client";
+import { PublicationService } from "../services/PublicationService";
 
 //Class
 export class CommentController {
     private commentService: CommentService;
     private geminiService: GoogleGeminiService;
+    private notificationService: RealtimeServices;
+    private publicationService: PublicationService;
 
     constructor () {
         this.commentService = new CommentService();
         this.geminiService = new GoogleGeminiService();
+        this.notificationService = new RealtimeServices();
+        this.publicationService = new PublicationService();
     };
 
     //Método para criar um comentário
@@ -26,12 +34,29 @@ export class CommentController {
             const data = createCommentSchema.parse(req.body); //Pegando o conteúdo da mensagem
 
             //Validando conteúdo do comnetário
-            // const verifyContentCommentary = await this.geminiService.verifyTextPublication(data.content);
-            // if (!verifyContentCommentary.sucess) return res.status(400).json({message: verifyContentCommentary.message, description: verifyContentCommentary.description});
+            const verifyContentCommentary = await this.geminiService.verifyTextPublication(data.content);
+            if (!verifyContentCommentary.sucess) return res.status(400).json({message: verifyContentCommentary.message, description: verifyContentCommentary.description});
+
+            //Verificando se a publicação existe
+            const publication = await this.publicationService.findDataPublication(idPublication);
+            if (!publication) return res.status(404).json({message: "Publication not found"});
 
             //Enviando os dados
             const createData = await this.commentService.createComment(idPublication, idUser, data.content);
             if (!createData.success) return res.status(404).json({message: createData.message});
+
+            if (idUser !== publication.userId) {
+                //Criando notificação
+                const notification: createNotificationDTO = {
+                    action: "SEE_PUBLICATION",
+                    content: "commented in you publication",
+                    receiverId: publication.userId,
+                    senderId: idUser,
+                    publicationId: idPublication
+                };
+    
+                await this.notificationService.createNotification(notification);
+            }
 
             //Retornando os dados
             return res.status(201).json({message: createData.message, data: createData.data});
