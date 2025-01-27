@@ -51,8 +51,8 @@ export class UserController {
             if (!validate(idUser)) return res.status(400).json({ error: "Invalid ID format" });
 
             //Primeiro procura no redis
-            const cachedUser = await this.redisClientService.getUserData(idUser);
-            if (cachedUser) return res.status(200).json({ message: "Data of Redis Client", searchUser: cachedUser });
+            //const cachedUser = await this.redisClientService.getUserData(idUser);
+            //if (cachedUser) return res.status(200).json({ message: "Data of Redis Client", searchUser: cachedUser });
 
             //Caso não encontre, realiza a pesquisa
             const searchUser = await this.userService.getUserByID(idUser);
@@ -61,7 +61,27 @@ export class UserController {
             if (!searchUser) return res.status(404).json({ error: "User not found" });
 
             // Armazenar o usuário no Redis para consultas futuras
-            await this.redisClientService.saveUserData(idUser, searchUser);
+            //await this.redisClientService.saveUserData(idUser, searchUser);
+
+            //Retornando o usuário
+            return res.status(200).json({ searchUser });
+        } catch (error) {
+            console.error("Error return user: ", error);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+    };
+
+    //Listar um usuário por Token
+    async searchUserForToken(req: Request, res: Response): Promise<Response> {
+        try {
+            //Pega o id do usuário
+            const idUser = req.id_User;
+            
+            //Caso não encontre, realiza a pesquisa
+            const searchUser = await this.userService.getUserByID(idUser);
+
+            // Verificar se o usuário foi encontrado
+            if (!searchUser) return res.status(404).json({ error: "User not found" });
 
             //Retornando o usuário
             return res.status(200).json({ searchUser });
@@ -120,14 +140,10 @@ export class UserController {
 
             // Criando coleções padrão do usuário
             const defaultCollection = await this.collectionService.createDefaultCollections(newUser.id);
-            if (!defaultCollection.success) return res.status(defaultCollection.status).json({error: defaultCollection.message});
-
-            //Gerando token
-            const tokenResult = generateToken(newUser.profileName, newUser.id);
-            if (!tokenResult.success) return res.status(500).json({ error: tokenResult.message }); 
+            if (!defaultCollection.success) return res.status(defaultCollection.status).json({error: defaultCollection.message}); 
 
             // Retornar o novo usuário criado
-            return res.status(201).json({newUser, token: tokenResult.token});
+            return res.status(201).json({newUser});
 
         } catch (error) {
             // Verificar se o erro é de validação do Zod
@@ -152,7 +168,8 @@ export class UserController {
             if (!userEmailExist) return res.status(404).json({ error: "User with email not found" });
 
             //Valida a senha
-            if (!checkePassword(dataUser.password, userEmailExist?.password)) return res.status(400).json({ error: "Invalid password" });
+            const isPasswordCorrect = await checkePassword(dataUser.password, userEmailExist?.password);
+            if (!isPasswordCorrect) return res.status(400).json({ error: "Invalid password" });    
 
             //Gera o token
             const tokenResult = generateToken(userEmailExist?.profileName, userEmailExist?.id);
@@ -194,7 +211,7 @@ export class UserController {
             if (!lockCheck.success) return res.status(lockCheck.status).json({ error: lockCheck.message });
 
             //Validar que não há nenhum outro usuário com essas informações
-            const userExistUserWithInformations = await this.userService.validateUserInformationUpdate(dataUser.email, dataUser.userName, idUser);
+            const userExistUserWithInformations = await this.userService.validateUserInformationUpdate(dataUser.email, dataUser.profileName, idUser);
             if (userExistUserWithInformations) return res.status(400).json({ error: userExistUserWithInformations });
 
             //Atualizando os dados do usuário
@@ -223,10 +240,6 @@ export class UserController {
             //Validando que o usuário existe
             const userExistWithEmail = await this.userService.getUserByEmail(dataUser.email);
             if (!userExistWithEmail) return res.status(404).json({ error: "User with email not found" });
-
-            // Verificação do bloqueio otimista
-            const lockCheck = await this.userService.lockedOptimistUser(userExistWithEmail.id, dataUser.version);
-            if (!lockCheck.success) return res.status(lockCheck.status).json({ error: lockCheck.message });
 
             //Criptografando a senha
             const passwordHash = await hashPassword(dataUser.password);
@@ -275,7 +288,7 @@ export class UserController {
             //Salvando no banco de dados
             const userUpdatedImage = await this.userService.updatePhotoUser(idUser, `images/${requestImage.filename}`);
 
-            return res.status(201).json({ massage: "Profile picture added", image: requestImage.filename, user: userUpdatedImage });
+            return res.status(201).json({ massage: "Profile picture added", image: requestImage.filename, data: userUpdatedImage });
 
         } catch (error) {
             // Caso seja um erro desconhecido, retornar erro genérico

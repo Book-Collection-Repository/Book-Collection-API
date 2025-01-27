@@ -6,30 +6,63 @@ import { CustomCollectionDTO } from "../types/collectionTypes";
 
 //Services
 import { CollectionService } from "../services/CollectionService";
+import { CollectionCacheServices } from "../services/cacheClient/CollectionCacheServices";
 
 //Validators
 import { createCustomCollectionSchema } from "../validators/collectionsValidator";
 import { ZodError } from "zod";
 import { handleZodError } from "../utils/errorHandler";
+import { validate } from "uuid";
 
 //Class
 export class CollectionController {
     private collectionService: CollectionService;
+    private cacheServices: CollectionCacheServices;
 
     constructor() {
         this.collectionService = new CollectionService();
-    }
+        this.cacheServices= new CollectionCacheServices();
+    } 
 
-    //Método para listar os dados de um coleção
+    //Método para listar os dados das coleções de usuários por token
     async getListCollectionsOfUser(req: Request, res: Response): Promise<Response> {
         try {
             //Pegando id do usuário
             const idUser = req.id_User;
 
+            //Buscandado dados no cache
+            const dataCache = await this.cacheServices.getListAllCollections(idUser);
+            if (dataCache) return res.status(200).json({ collection: dataCache});
+
             //Procurando collection
             const collection = await this.collectionService.listCollectionsOfUser(idUser);
 
+            //Salvando dados no cache
+            await this.cacheServices.saveAllCollections(idUser, collection);
+
             return res.status(200).json({ collection});
+        } catch (error) {
+            console.error("Error return collection: ", error);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+    };
+
+    //Método para listar os dados das coleções de usuários
+    async getListCollectionsOfUserForID(req: Request, res: Response): Promise<Response> {
+        try {
+            //Pegando id do usuário
+            const idUser = req.params.idUser; 
+            
+            //Verificando se o id do usuário foi fornecido
+            if (!idUser || idUser === undefined || idUser === null) return res.status(401).json({ message: "ID of user not informed" });
+            
+            // Validando que o ID é um UUID válido
+            if (!validate(idUser)) return res.status(400).json({ message: "Invalid format ID" });
+
+            //Procurando collection
+            const collection = await this.collectionService.listCollectionsOfUser(idUser);
+
+            return res.status(200).json({collection});
         } catch (error) {
             console.error("Error return collection: ", error);
             return res.status(500).json({ error: "Internal Server Error" });

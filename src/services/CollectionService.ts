@@ -20,7 +20,11 @@ export class CollectionService {
     async listCollectionsOfUser(userId: string) {
         const data = await prisma.collection.findMany({
             where: { userId },
-            include: { books: true }
+            include: { books: {
+                include: {
+                    book: true,
+                }
+            } }
         });
 
         return data;
@@ -29,7 +33,7 @@ export class CollectionService {
     //Método para saber se um coleção existe
     async getFindExistsCollection(id: string) {
         const data = await prisma.collection.findUnique({
-            where: {id}
+            where: {id},
         });
 
         return data;
@@ -39,8 +43,14 @@ export class CollectionService {
     async listDataFromCollection(id: string, userId: string) {
         //Busacando dados
         const data = await prisma.collection.findUnique({
-            where: { id },
-            include: { books: true }
+            where: { id }, 
+            include: {
+                books: {
+                    include: {
+                        book: true
+                    }
+                }
+            }
         });
         if (!data) return { success: false, status: 404, message: "Collection with ID not found", data: null };
 
@@ -88,6 +98,9 @@ export class CollectionService {
                     collectionStatus: CollectionStatus.CUSTOM,
                     defaultType: null, // Definido como nulo para coleções customizadas
                 },
+                include: {
+                    books: true
+                }
             });
 
             return { success: true, status: 201, message: "Custom collection created successfully", data: customCollection };
@@ -112,6 +125,13 @@ export class CollectionService {
             const updatedCollection = await prisma.collection.update({
                 where: { id },
                 data: { ...collection },
+                include: {
+                    books: {
+                        include: {
+                            book: true,
+                        }
+                    }
+                }
             });
 
             return { success: true, status: 200, message: "Collection updated successfully", data: updatedCollection };

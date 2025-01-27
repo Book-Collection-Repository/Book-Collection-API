@@ -3,6 +3,7 @@ import { prisma } from "./prisma";
 
 //Services
 import { ReadingDiaryServices } from "./ReagingDiaryServices";
+import { GoogleGeminiService } from "./GoogleGeminiServices";
 
 //Types
 import { RecordDiaryDTO } from "../types/readingDiaryRecordTypes";
@@ -11,9 +12,11 @@ import { RecordDiaryDTO } from "../types/readingDiaryRecordTypes";
 export class ReadingDiaryRecordServices {
 
     private readingDiaryService: ReadingDiaryServices;
+    private geminiServices: GoogleGeminiService;
 
     constructor() {
         this.readingDiaryService = new ReadingDiaryServices();
+        this.geminiServices = new GoogleGeminiService();
     };
 
     //Método para listar todos os registros de um diário de leitura
@@ -49,6 +52,10 @@ export class ReadingDiaryRecordServices {
             //Verificar se o usuário é o responsável por esse diário de leitura
             const userIsResponsible = await this.readingDiaryService.userIsResponsibleForReadingDiary(diaryId, userId);
             if (!userIsResponsible) return { success: false, message: "User not responsible for reading diary" };
+
+            //Verificando o conteúdo do registro de leitura
+            const verifyContent = await this.geminiServices.verifyTextPublication(data.content);
+            if (!verifyContent.sucess) return { success: verifyContent.sucess, message: verifyContent.message, description: verifyContent.description };
 
             //Criando o registro
             const createRecord = await prisma.readingDiaryRecord.create({
@@ -112,14 +119,20 @@ export class ReadingDiaryRecordServices {
             const userIsResponsible = await this.readingDiaryService.userIsResponsibleForReadingDiary(recordDiaryExists.readingDiaryId, userId);
             if (!userIsResponsible) return { success: false, message: "User not responsible for reading diary" };
 
-            //Chamando a atualização
-            const updatedDiary = await this.readingDiaryService.updateLastReadingPercentage(recordDiaryExists.readingDiaryId);
-            if (!updatedDiary.success) return { success: updatedDiary.success, message: updatedDiary.message };
-
             //Remove o resgistro do diário de leitura
             await prisma.readingDiaryRecord.delete({
                 where: { id: recordId }
             });
+
+            //Buscando o último registro de leitura
+            const lastRecord = await this.findLastRecordOfReadingDiary(recordDiaryExists.readingDiaryId);
+            if (!lastRecord) {
+                //Atualizando a porcentagem de leitura do diário
+                await this.readingDiaryService.updateReadingPercentageOfDiary(recordDiaryExists.readingDiaryId, userId, 0);
+            } else {
+                //Atualizando a porcentagem de leitura do diário
+                await this.readingDiaryService.updateReadingPercentageOfDiary(recordDiaryExists.readingDiaryId, userId, lastRecord.pagesRead);
+            }
 
             //Retornando resposta
             return { success: true, message: "Record of Reading Diary is removed" };

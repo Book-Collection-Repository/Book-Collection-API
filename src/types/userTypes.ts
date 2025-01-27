@@ -35,5 +35,4 @@ export type UpdatePasswordUserDTO = {
     email: string;
     password: string;
     confirmPassword: string;
-    version: number;
 };

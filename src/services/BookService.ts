@@ -32,10 +32,12 @@ export class BookService {
 
         // Mapeia os dados para extrair somente os campos necessários
         const books = data.items.map((item: any) => ({
-            title: item.volumeInfo.title,
-            subtitle: item.volumeInfo.subtitle || null, // Usa null se não houver subtítulo
-            image: item.volumeInfo.imageLinks?.thumbnail || null, // Usa null se não houver imagem
-            genres: item.volumeInfo.categories || []
+            title: item.volumeInfo.title || 'Unknown Title',
+            author: item.volumeInfo.authors && item.volumeInfo.authors.length > 0
+                ? item.volumeInfo.authors.join(' | ')
+                : 'Unknown Author',
+            image: item.volumeInfo.imageLinks?.thumbnail || 'Unknown Thumbnail', // Usa null se não houver imagem
+            genres: item.volumeInfo.categories ? item.volumeInfo.categories[0] : 'Unknown Genre',
         }));
 
         //Retorno oresultado
@@ -137,7 +139,7 @@ export class BookService {
 
         //Valida que há dados
         if (!allBooks?.items || allBooks.items.length === 0) {
-            return { success: false, message: "No books found for the provided ISBN", data: null };
+            return { success: false, message: "No books found for the provided genres", data: null };
         };
 
         // Adaptar todos os livros retornados
@@ -146,7 +148,7 @@ export class BookService {
         );
 
         //Retornando a resposta
-        return { success: true, message: "Books foun in the external API", data: adaptedBooks };
+        return { success: true, message: "Books found in the external API", data: adaptedBooks };
     };
 
     //Método para procurar na API GOOGLE BOOKS (pesquisa por Autor)
@@ -175,7 +177,7 @@ export class BookService {
                 data: { ...book }
             });
 
-            return {success: true, message: "Book adding in database", data: createBook}
+            return { success: true, message: "Book adding in database", data: createBook }
         } catch (error) {
             console.error("Error in creating book: ", error);
             throw new Error("Error in creating book");

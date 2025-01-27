@@ -16,6 +16,7 @@ const bookCollectionController = new BookCollectionController();
 
 //Rotas
 collectionRoutes.get("/", authValidationToken, checkingUserExists, collectionController.getListCollectionsOfUser.bind(collectionController));
+collectionRoutes.get("/user/:idUser", collectionController.getListCollectionsOfUserForID.bind(collectionController));
 collectionRoutes.get("/:idCollection", checkingCollectionExists, authValidationToken, checkingUserExists, collectionController.getListDataFromCollection.bind(collectionController));
 collectionRoutes.post("/default", authValidationToken, checkingUserExists, collectionController.createDefaultCollections.bind(collectionController));
 collectionRoutes.post("/custom", authValidationToken, checkingUserExists, collectionController.creteCustomCollections.bind(collectionController));

@@ -5,5 +5,5 @@ import { z, ZodError } from 'zod';
 export const createPublicationSchema = z.object({
     content: z.string()
         .min(3, { message: 'Publication must be at least 3 characters long' })
-        .max(200, { message: 'Publication must be at most 200 characters long' })
+        .max(500, { message: 'Publication must be at most 500 characters long' })
 });

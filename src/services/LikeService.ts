@@ -20,15 +20,15 @@ export class LikeService {
             if (alreadyLiked.success) return { success: false, message: "User already liked this publication" };
 
             //Criando like
-            await prisma.like.create({
-                data: {publicationId, userId}
+            const like = await prisma.like.create({
+                data: {publicationId, userId},
             });
 
             //Atualiza curtida da publicação
             await this.publicationService.updateLikedPublication(publicationId, true);
 
             //Retorna o dado
-            return {success: true, message: "Like publication"};
+            return {success: true, message: "Like publication", data: like};
         
         } catch (error) {
             console.error("Error relized like: ", error);

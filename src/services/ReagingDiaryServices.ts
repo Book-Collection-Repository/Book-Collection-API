@@ -4,7 +4,7 @@ import { prisma } from "./prisma";
 //Services
 import { BookService } from "./BookService";
 import { RedisClientService } from "./RedisClientService";
-import { ReadingFinished } from "@prisma/client";
+import { EntityVisibility, Prisma, ReadingFinished } from "@prisma/client";
 import { BookCollectionService } from "./BookCollectionService";
 
 //Types
@@ -26,7 +26,10 @@ export class ReadingDiaryServices {
     async listAllReadingDiariesOfUser(userId: string) {
         const diaries = await prisma.readingDiary.findMany({
             where: { userId },
-            include: {readingDiaryRecords: true}
+            include: {
+                book: true,
+                readingDiaryRecords: true
+            }
         });
 
         return diaries;
@@ -36,14 +39,17 @@ export class ReadingDiaryServices {
     async listReadingDiary(diaryId: string) {
         const diary = await prisma.readingDiary.findUnique({
             where: { id: diaryId },
-            include: { readingDiaryRecords: true }
+            include: { 
+                book: true,
+                readingDiaryRecords: true
+            }
         });
 
         return diary;
     };
 
     //Método para criar um diário de leitura
-    async createReadingDiary(bookId: string, userId: string) {
+    async createReadingDiary(bookId: string, userId: string, visibility: EntityVisibility) {
         //Validar que o usuário já não tenho um diário de leitura
         const existingDiary = await this.userHaveReadingDiaryOfBook(bookId, userId);
 
@@ -61,7 +67,12 @@ export class ReadingDiaryServices {
                 bookId,
                 userId,
                 readingPercentage: 0,
+                visibility
             },
+            include: {
+                book: true,
+                readingDiaryRecords: true,
+            }
         });
 
         //Adicionando o livro a coleção de lendo
@@ -82,6 +93,36 @@ export class ReadingDiaryServices {
 
         return { success: true, message: "Reading Diary reactivated for rereading.", data: updatedDiary };
     };
+
+    //Método para atualizar visibiliodade do diáriom de leitura
+    async updateVisibilityOfDiary(diaryId: string, userId: string, visibility: EntityVisibility) {
+        try {
+            // Verificar se o diário de leitura existe e é do usuário correto
+            const diary = await this.listReadingDiary(diaryId);
+            if (!diary || diary.userId !== userId) {
+                return { success: false, message: "Reading diary not found or user not authorized" };
+            };
+    
+            //Editar visibilidade
+            const updatedDiary = await prisma.readingDiary.update({
+                where: {id: diaryId},
+                data: {
+                    visibility
+                },
+                include: {
+                    book: true,
+                    readingDiaryRecords: true
+                }
+            });
+            
+            //Retornar dados
+            return { success: true, message: "Reading diary updated successfully", data: updatedDiary };
+
+        } catch (error) {
+            console.error("Error updating visibility of reading diary:", error);
+            return { success: false, message: "Failed to edit the visibility of reading diary" };
+        }
+    }
 
     //Método para finalizar um registro de leitura
     async finishReadingDiary(diaryId: string, userId: string) {

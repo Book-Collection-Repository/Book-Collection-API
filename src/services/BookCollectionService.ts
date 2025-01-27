@@ -49,6 +49,7 @@ export class BookCollectionService {
             //Adicionando livro na coleção
             const addtingBook = await prisma.bookCollection.create({
                 data: { collectionId, bookId, },
+                include: { book: true }
             });
 
             //Verificando os gêneros e autores que mais esse repetem
@@ -135,7 +136,6 @@ export class BookCollectionService {
 
         return { success: removeBook.success, message: removeBook.message };
     };
-
 
     //Função para identificar se o livro já faz parte da coleção
     private async CheckingIfBookIsStoredTheCollection(collectionId: string, bookId: string) {

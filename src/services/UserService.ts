@@ -12,37 +12,33 @@ export class UserService {
         return await prisma.user.findMany({
             include: {
                 avaliations: true,
-                collections: true,
+                followers: true,
+                following: true,
                 publications: true,
-                readingDiaries: true,
             }
         });
-    }
+    };
 
     //Procura um usuário com um determinado id
     async getUserByID(id: string) {
-        const user = await prisma.user.findUnique({
+        return await prisma.user.findUnique({
             where: { id },
             include: {
                 avaliations: true,
-                collections: true,
                 publications: true,
-                readingDiaries: true,
+                followers: true,
+                following: true,
             }
         });
-
-        return user;
-    }
+    };
 
     //Procura um usuário com um determinado email
-    async getUserByEmail(email: string){
+    async getUserByEmail(email: string) {
         const userEmail = await prisma.user.findUnique({
             where: { email },
             include: {
                 avaliations: true,
-                collections: true,
                 publications: true,
-                readingDiaries: true,
             }
         });
 
@@ -52,9 +48,9 @@ export class UserService {
     //Procurar um usuário com um determinado email, mas com id diferente
     async getUserByEmailButNotID(email: string, id: string) {
         const data = await prisma.user.findFirst({
-            where:{
+            where: {
                 email,
-                id: {not: id}
+                id: { not: id }
             }
         });
 
@@ -63,35 +59,55 @@ export class UserService {
 
     // Procura um usuário com um determinado nome de perfil
     async getUserByProfileName(profileName: string) {
-        const userProfileName = await prisma.user.findUnique({
-            where: { profileName },
+        const userProfileName = await prisma.user.findMany({
+            where: {
+                profileName: {
+                    contains: profileName, // Busca que inclui a string no nome do perfil
+                    mode: 'insensitive',   // Tornando a busca case-insensitive, se necessário
+                },
+            },
             include: {
                 avaliations: true,
                 collections: true,
                 publications: true,
-                readingDiaries: true,
+                readingDiaries: {
+                    include: {
+                        book: true,
+                    }
+                },
             }
         });
 
         return userProfileName;
     };
 
+    //Procura um usuário que um nome especídico
+    async getUserByDetminedProfileName(profileName: string) {
+        const userProfileName = await prisma.user.findUnique({
+            where: {
+                profileName: profileName
+            }
+        });
+
+        return userProfileName;
+    }
+
     //Procurando um usuário com um determinado nome de perfil, mas com id diferente
     async getUserByProfileNameButNotID(profileName: string, id: string) {
         const data = await prisma.user.findFirst({
             where: {
                 profileName,
-                id: {not: id}
+                id: { not: id }
             }
         });
 
         return data;
     }
-    
+
     // Validando se existe um usuário com o mesmo e-mail ou nome de perfil
     async validateUserInformation(email: string, profileName: string): Promise<string | null> {
         const emailExists = await this.getUserByEmail(email);
-        const profileNameExists = await this.getUserByProfileName(profileName);
+        const profileNameExists = await this.getUserByDetminedProfileName(profileName);
 
         if (emailExists) return 'Email already exists';
         if (profileNameExists) return 'Profile name already exists';
@@ -99,21 +115,25 @@ export class UserService {
         return null;
     };
 
-    async validateUserInformationUpdate( email: string, profileName: string, idUser: string ): Promise<string | null> {
+    async validateUserInformationUpdate(email: string, profileName: string, idUser: string): Promise<string | null> {
         const emailExists = await this.getUserByEmailButNotID(email, idUser);
         const profileNameExists = await this.getUserByProfileNameButNotID(profileName, idUser);
-    
+
         if (emailExists) return 'Email already exists';
         if (profileNameExists) return 'Profile name already exists';
-    
+
         return null;
     };
-    
+
     // Cria um usuário com as informações que foram passadas
     async createUser(data: CreateUserDTO) {
         try {
             const user = await prisma.user.create({
-                data: { ...data }
+                data: { ...data },
+                include: {
+                    avaliations: true,
+                    publications: true,
+                }
             });
 
             return user;
@@ -126,22 +146,26 @@ export class UserService {
     // Bloqueia operação concorrente
     async lockedOptimistUser(id: string, version: number) {
         const user = await prisma.user.findUnique({
-            where: {id},
+            where: { id },
         });
 
-        if (version !== user?.version) return { success: false, status: 400, message: "The user version is not compatible with the database version" }; 
-    
-        return { success: true, status: 200, message: "The user version compatible with the database version"};
+        if (version !== user?.version) return { success: false, status: 400, message: "The user version is not compatible with the database version" };
+
+        return { success: true, status: 200, message: "The user version compatible with the database version" };
     }
 
     // Editando as informações de um usuário
     async updateUser(data: UpdateProfileUserDTO, id: string) {
         try {
             const user = await prisma.user.update({
-                where: {id},
-                data: { ... data, }
+                where: { id },
+                data: { ...data, },
+                include: {
+                    avaliations: true,
+                    publications: true,
+                }
             });
-            
+
             return user;
 
         } catch (error) {
@@ -154,13 +178,12 @@ export class UserService {
     async updatePasswordUser(data: UpdatePasswordUserDTO) {
         try {
             const user = await prisma.user.update({
-                where: {email: data.email},
+                where: { email: data.email },
                 data: {
-                    password: data.password,
-                    version: {increment: 1},
+                    password: data.password
                 }
             });
-            
+
             return user;
 
         } catch (error) {
@@ -173,13 +196,13 @@ export class UserService {
     async updatePhotoUser(id: string, fileName: string) {
         try {
             const user = await prisma.user.update({
-                where: {id},
+                where: { id },
                 data: {
                     profileImage: fileName,
-                    version: {increment: 1}
+                    version: { increment: 1 }
                 }
             });
-            
+
             return user;
 
         } catch (error) {
@@ -224,9 +247,9 @@ export class UserService {
     async removeUser(id: string) {
         try {
             await prisma.user.delete({
-                where: {id},
+                where: { id },
             });
-            
+
             return "User removed";
         } catch (error) {
             console.error("Error removing user: ", error);

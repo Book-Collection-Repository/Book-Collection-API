@@ -76,7 +76,6 @@ export class GoogleBookService {
                 params: {
                     q: `subject:${genre}`,
                     key: this.googleApiKey,
-                    langRestrict: "pt"
                 }
             });
             return response.data;

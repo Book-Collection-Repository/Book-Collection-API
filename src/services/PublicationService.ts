@@ -1,16 +1,30 @@
 //Importações
 import { prisma } from "./prisma";
 
-//Types
+//Services
+import { PublicationCacheServices } from "./cacheClient/PublicationCacheServices";
 
 //Class
 export class PublicationService {
+    private cacheServices: PublicationCacheServices;
+
+    constructor () {
+        this.cacheServices = new PublicationCacheServices();
+    }
 
     //Método para lsitar todas publicações realizadas recentemente
     async findAllLatestPublication () {
         const publications = await prisma.publication.findMany({
             orderBy:{createdAt: "desc"},
-            include: {commentaries: true, likes: true}
+            include: {
+                user: true,
+                commentaries: {
+                    include: {
+                        user: true,
+                    }
+                }, 
+                likes: true
+            }
         });
 
         return publications;
@@ -20,7 +34,15 @@ export class PublicationService {
     async findAllPublcationsOfUser (userId: string) {
         const publications = await prisma.publication.findMany({
             where: {userId},
-            include: {commentaries: true, likes: true}
+            include: {
+                user: true,
+                commentaries: {
+                    include: {
+                        user: true,
+                    }
+                }, 
+                likes: true
+            }
         });
 
         return publications;
@@ -30,7 +52,15 @@ export class PublicationService {
     async findDataPublication (publicationId: string) {
         const data = await prisma.publication.findUnique({
             where: {id: publicationId},
-            include: {commentaries: true, likes: true}
+            include: {
+                user: true,
+                commentaries: {
+                    include: {
+                        user: true,
+                    }
+                }, 
+                likes: true
+            }
         });
 
         return data;
@@ -42,6 +72,15 @@ export class PublicationService {
             const publication = await prisma.publication.create({
                 data: {
                     content, userId,
+                },
+                include: {
+                    user: true,
+                    commentaries: {
+                        include: {
+                            user: true,
+                        }
+                    }, 
+                    likes: true
                 }
             });
     
@@ -62,7 +101,16 @@ export class PublicationService {
             //Realiza a atulização
             const publication = await prisma.publication.update({
                 where: {id: publicationId},
-                data: {content}
+                data: {content},
+                include: {
+                    user: true,
+                    commentaries: {
+                        include: {
+                            user: true,
+                        }
+                    }, 
+                    likes: true
+                }
             });
 
             //Retorna o dado
@@ -82,8 +130,20 @@ export class PublicationService {
                 where: { id: publicationId },
                 data: {
                     likesCount: increment ? { increment: 1 } : { decrement: 1 }
+                },
+                include: {
+                    user: true,
+                    commentaries: {
+                        include: {
+                            user: true,
+                        }
+                    }, 
+                    likes: true
                 }
             });
+
+            //Atualiza os dado no cache
+            await this.updatingActionsInPublication(updatedPublication.userId);
 
             return { success: true, message: "Publication like count updated", data: updatedPublication };
         
@@ -101,8 +161,20 @@ export class PublicationService {
                 where: { id: publicationId },
                 data: {
                     commentariesCount: increment ? { increment: 1 } : { decrement: 1 }
+                },
+                include: {
+                    user: true,
+                    commentaries: {
+                        include: {
+                            user: true,
+                        }
+                    }, 
+                    likes: true
                 }
             });
+
+            //Atualiza os dado no cache
+            await this.updatingActionsInPublication(updatedPublication.userId);
 
             return { success: true, message: "Publication comment count updated", data: updatedPublication };
         
@@ -144,4 +216,18 @@ export class PublicationService {
         //Retorna mensagem final
         return {success: true, message: "User is responsible"};
     };
+
+    //Função auxiliar para atualizar curtidas e comentários de uma publicação no cache
+    private async updatingActionsInPublication (userId:string) {
+        try {
+            //Buscando todas as publicações do usuário
+            const data = await this.findAllPublcationsOfUser(userId);
+
+            //Salvando no cache
+            this.cacheServices.saveAllPublications(userId, data);
+
+        } catch (error) {
+            console.log("Not is possible updating publication: ", error);
+        }
+    }
 };

@@ -1,8 +1,11 @@
 //Importações
 import { Request, Response } from "express";
+import { validate } from "uuid";
 
 //Services
 import { PublicationService } from "../services/PublicationService";
+import { GoogleGeminiService } from "../services/GoogleGeminiServices";
+import { PublicationCacheServices } from "../services/cacheClient/PublicationCacheServices";
 
 //Validator
 import { createPublicationSchema } from "../validators/publicationValidator";
@@ -10,9 +13,13 @@ import { createPublicationSchema } from "../validators/publicationValidator";
 //Class
 export class PublicationController {
     private publicationService: PublicationService;
+    private geminiService: GoogleGeminiService;
+    private cacheService: PublicationCacheServices;
 
     constructor() {
         this.publicationService = new PublicationService();
+        this.geminiService = new GoogleGeminiService();
+        this.cacheService = new PublicationCacheServices();
     };
 
     //Requisição para listar todas as publicações realizada recentemente
@@ -30,14 +37,43 @@ export class PublicationController {
         };
     }
 
-    //Requisição para listar todas as publicações de um usuário
-    async getFindAllPublicationsOfUser(req: Request, res: Response): Promise<Response> {
+    //Requisição para listar todas as publicações de um usuário por token
+    async getFindAllPublicationsOfUserForToken(req: Request, res: Response): Promise<Response> {
         try {
             const idUser = req.id_User; //Pegando o id do usuário
 
             //Realizando a busca de dados
+            const publicationCache = await this.cacheService.getListAllpublications(idUser);
+            if (publicationCache) return res.status(200).json({ message: "Return messages of user", data: publicationCache });
+
+            //Buscando no banco de dados
             const data = await this.publicationService.findAllPublcationsOfUser(idUser);
-            if (!data.length) return res.status(400).json({ message: "User not publications" });
+            if (!data.length) return res.status(200).json({ message: "User not publications" });
+
+            //Salvando no cache
+            await this.cacheService.saveAllPublications(idUser, data);
+
+            //Retornando os dados
+            return res.status(200).json({ message: "Return messages of user", data });
+
+        } catch (error) {
+            console.error("Error return publication: ", error);
+            return res.status(500).json({ error: "Internal Server Error" });
+        };
+    };
+
+    //Requisição para listar todas as publicações de um usuário por id
+    async getFindAllPublicationsOfUser(req: Request, res: Response): Promise<Response> {
+        try {
+            const idUser = req.params.idUser; //Pegando o id do usuário
+
+            //Verificando que o id foi passado
+            if (!idUser || idUser === undefined || idUser === null) return res.status(401).json({ message: "ID of user not informed" });
+            if (!validate(idUser)) return res.status(400).json({ message: "Invalid format ID" });
+
+            //Realizando a busca de dados
+            const data = await this.publicationService.findAllPublcationsOfUser(idUser);
+            if (!data.length) return res.status(200).json({ message: "User not publications", data });
 
             //Retornando os dados
             return res.status(200).json({ message: "Return messages of user", data });
@@ -72,12 +108,16 @@ export class PublicationController {
             const idUser = req.id_User; //Pegando o id do usuário
             const data = createPublicationSchema.parse(req.body); //Pegando o conteúdo da mensagem
 
+            //Validando a informação recebida
+            const validationData = await this.geminiService.verifyTextPublication(data.content);
+            if (!validationData.sucess) return res.status(400).json({ message: validationData.message, description: validationData.description });
+
             //Enviando os dados
             const createData = await this.publicationService.createPublication(idUser, data.content);
-            if (!createData.success) return res.status(404).json({message: createData.message});
+            if (!createData.success) return res.status(404).json({ message: createData.message });
 
             //Retornando os dados
-            return res.status(201).json({message: createData.message, data: createData.data});
+            return res.status(201).json({ message: createData.message, data: createData.data });
 
         } catch (error) {
             console.error("Error create publication: ", error);
@@ -92,12 +132,16 @@ export class PublicationController {
             const idPublication = req.params.idPublication; //Pegando o id da publicação
             const data = createPublicationSchema.parse(req.body); //Pegando o conteúdo da mensagem
 
+            //Validando a informação recebida
+            // const validationData = await this.geminiService.verifyTextPublication(data.content);
+            // if (!validationData.sucess) return res.status(400).json({ message: validationData.message, description: validationData.description });
+
             //Enviando os dados
             const updateData = await this.publicationService.updatePublication(idPublication, idUser, data.content);
-            if (!updateData.success) return res.status(400).json({message: updateData.message});
+            if (!updateData.success) return res.status(400).json({ message: updateData.message });
 
             //Retornando os dados
-            return res.status(200).json({message: updateData.message, data: updateData.data});
+            return res.status(200).json({ message: updateData.message, data: updateData.data });
 
         } catch (error) {
             console.error("Error update publication: ", error);
@@ -113,10 +157,10 @@ export class PublicationController {
 
             //Enviando os dados
             const removeData = await this.publicationService.removePublication(idPublication, idUser);
-            if (!removeData.success) return res.status(400).json({message: removeData.message});
+            if (!removeData.success) return res.status(400).json({ message: removeData.message });
 
             //Retornando os dados
-            return res.status(200).json({message: removeData.message});
+            return res.status(200).json({ message: removeData.message });
 
         } catch (error) {
             console.error("Error remove publication: ", error);

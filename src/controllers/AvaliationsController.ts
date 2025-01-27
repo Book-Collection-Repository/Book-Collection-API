@@ -6,6 +6,8 @@ import { ZodError } from "zod";
 //Services
 import { AvaliationService } from "../services/AvaliationsService";
 import { BookCollectionService } from "../services/BookCollectionService";
+import { GoogleGeminiService } from "../services/GoogleGeminiServices";
+import { AvaliationCacheServices } from "../services/cacheClient/AvaliationCacheServices";
 
 //Types
 import { CreateAvalaitonDTO } from "../types/AvaliationTypes";
@@ -16,26 +18,38 @@ import { createAvaliationSchema } from "../validators/avaliationValidator";
 //Utils
 import { handleZodError } from "../utils/errorHandler";
 import { UserService } from "../services/UserService";
+import { BookService } from "../services/BookService";
 
 //Class
 export class AvaliationController {
-    private avaliationService: AvaliationService
+    private avaliationService: AvaliationService;
+    private cacheService: AvaliationCacheServices;
     private userService: UserService;
     private bookCollectionService: BookCollectionService;
+    private geminiServices: GoogleGeminiService;
+    private bookService: BookService;
 
     constructor() {
         this.avaliationService = new AvaliationService();
+        this.cacheService = new AvaliationCacheServices();
         this.userService = new UserService();
         this.bookCollectionService = new BookCollectionService();
+        this.geminiServices = new GoogleGeminiService();
+        this.bookService = new BookService();
     };
 
     //Requisição para listar as avaliações de um livro
     async getListAvaliationsOfBook(req: Request, res: Response): Promise<Response> {
         try {
             const idBook = req.params.idBook; //Pegando o id do livro
+            if (!idBook || idBook === null || idBook === undefined) return res.status(400).json({error: "Book ID not found"});
+
+            //Verificando se o livros está no banco de dados
+            const bookInDataBase = await this.bookService.getBookInDataBaseWithExternalID(idBook);
+            if (!bookInDataBase) return res.status(200).json({message: "Book not registred in database"});
 
             //Buscando avaliações do livro
-            const avaliations = await this.avaliationService.findAvaliationsOfBook(idBook);
+            const avaliations = await this.avaliationService.findAvaliationsOfBook(bookInDataBase.id);
             if (avaliations.length <= 0) return res.status(200).json({ message: "Book not have avaliations" });
 
             return res.status(200).json({ message: "Book have some avaliations", avaliations });
@@ -45,10 +59,33 @@ export class AvaliationController {
         };
     };
 
+    //Requisição para listar as avaliações de um usuário por token
+    async getListAvaliationsOfUserForToken(req: Request, res: Response): Promise<Response> {
+        try {
+            const idUser = req.id_User;
+
+            //Buscando avaliações feitas pelo usuário
+            //Busca no cache
+            const avaliationCache = await this.cacheService.getListAllAvaliations(idUser);
+            if (avaliationCache) return res.status(200).json({ message: "User has some reviews", avaliations: avaliationCache });
+
+            const avaliations = await this.avaliationService.findAvaliationsOfUser(idUser);
+            if (avaliations.length <= 0) return res.status(200).json({ message: "User has no reviews" });
+
+            //Salva os dados no cache
+            await this.cacheService.saveAllAvaliations(idUser, avaliations);
+
+            return res.status(200).json({ message: "User has some reviews", avaliations });
+        } catch (error) {
+            console.error("Error return avaliation: ", error);
+            return res.status(500).json({ error: "Internal Server Error" });
+        };
+    };
+
     //Requisição para listar as avaliações de um usuário
     async getListAvaliationsOfUser(req: Request, res: Response): Promise<Response> {
         try {
-            const idUser = req.params.idUser; //Pegando o id do livro
+            const idUser = req.params.idUser; //Pegando o id do usuário
 
             //Verificando que o id foi passado
             if (!idUser || idUser === undefined || idUser === null) return res.status(401).json({ message: "ID of user not informed" });
@@ -60,7 +97,7 @@ export class AvaliationController {
 
             //Buscando avaliações feitas pelo usuário
             const avaliations = await this.avaliationService.findAvaliationsOfUser(idUser);
-            if (avaliations.length <= 0) return res.status(200).json({ message: "User has no reviews" });
+            if (avaliations.length <= 0) return res.status(200).json({ message: "User has no reviews", avaliations });
 
             return res.status(200).json({ message: "User has some reviews", avaliations });
         } catch (error) {
@@ -101,6 +138,10 @@ export class AvaliationController {
             const userAvaliableBook = await this.avaliationService.userAvaliableBook(idBook, idUser);
             if (userAvaliableBook) return res.status(400).json({ message: "This book has already been rated by the user" });
 
+            //Validando que a avaliação não é de cunho preconceituoso
+            const verifyTextPublication = await this.geminiServices.verifyTextPublication(avaliation.content);
+            if (!verifyTextPublication.sucess) return res.status(400).json({ message: verifyTextPublication.message, description: verifyTextPublication.description });
+
             //Criando avaliação
             const createAvaliation = await this.avaliationService.createAvaliationForBook({ ...avaliation, userId: idUser, bookId: idBook });
             if (!createAvaliation.success) return res.status(400).json({ message: createAvaliation.message });
@@ -136,6 +177,10 @@ export class AvaliationController {
             //Validando que a avaliação existe
             const avaliationExistWithID = await this.avaliationService.findAvaliaiton(idAvaliation);
             if (!avaliationExistWithID) return res.status(404).json({ message: "Avaliation not found" });
+
+            //Validando que a avaliação não é de cunho preconceituoso
+            // const verifyTextPublication = await this.geminiServices.verifyTextPublication(avaliation.content);
+            // if (!verifyTextPublication.sucess) return res.status(400).json({ message: verifyTextPublication.message, description: verifyTextPublication.description });
 
             //Editando a avaliação
             const updateAvaliation = await this.avaliationService.updateAvaliationOfBook(idAvaliation, idUser, avaliation);
@@ -176,5 +221,4 @@ export class AvaliationController {
             return res.status(500).json({ error: "Internal Server Error" });
         };
     };
-
 };

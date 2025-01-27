@@ -12,7 +12,10 @@ export class AvaliationService {
     //Método para lsitar as avaliações de um livro
     async findAvaliationsOfBook (bookId: string) {
         const avaliationsBook = await prisma.avaliation.findMany({
-            where:{bookId}
+            where:{bookId},
+            include: {
+                user: true,
+            }
         });
 
         return avaliationsBook;
@@ -21,7 +24,10 @@ export class AvaliationService {
     //Método para listar as avaliações de um usuário
     async findAvaliationsOfUser (userId: string) {
         const avaliationsUser = await prisma.avaliation.findMany({
-            where: {userId}
+            where: {userId},
+            include: {
+                book: true,
+            }
         });
 
         return avaliationsUser;
@@ -30,7 +36,10 @@ export class AvaliationService {
     //Método para listar uma avaliação
     async findAvaliaiton (id: string) {
         const avaliation = await prisma.avaliation.findUnique({
-            where: {id}
+            where: {id},
+            include: {
+                book: true,
+            }
         });
 
         return avaliation;
@@ -40,7 +49,8 @@ export class AvaliationService {
     async createAvaliationForBook (data: AvalaitonDTO) {
         try {
             const creteAvaliation = await prisma.avaliation.create({
-                data: {...data}
+                data: {...data},
+                include: {book: true},
             });
 
             return {success: true, message: "Avaliation created for book", data: creteAvaliation};
@@ -60,7 +70,8 @@ export class AvaliationService {
         //Edita o usuário
         const updateAvaliation = await prisma.avaliation.update({
             where:{id},
-            data: {...data}
+            data: {...data},
+            include: {book: true},
         });
 
         //Retorna resposta

@@ -108,6 +108,28 @@ export class BookController {
         }
     };
 
+    //Método para listar livros e recomendações da API externa pesquisados por ID
+    async getDataBooksInExternalApiForID(req: Request, res: Response): Promise<Response> {
+        try {
+            const bookId = req.params.idBook; //Pegando id
+            if (!bookId || bookId === null || bookId === undefined) return res.status(400).json({error: "Book ID not found"});
+
+            //Fazendo e validando a resposta da pesquisa
+            const getBooks = await this.bookService.searchBookInExternalApiForId(bookId);
+            if (!getBooks.success || getBooks.data === null) return res.status(404).json({ message: getBooks.message });
+
+            //Pesquisando livros do mesmo autor
+            const recommedBookks = await this.bookService.searchBookInExternalApiForAuthor(getBooks.data.author);
+            if(!recommedBookks.success || recommedBookks.data == null) return res.status(404).json({message: recommedBookks.message});
+
+            //Retornando
+            return res.status(200).json({ message: getBooks.message, data: getBooks.data, recommed: recommedBookks.data });
+        } catch (error) {
+            console.error("Error return book: ", error);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+    };
+
     //Método para listar livros da API externa pesquisados por título
     async getBooksInExternalApiForTitle(req: Request, res: Response): Promise<Response> {
         try {
