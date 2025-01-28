@@ -109,6 +109,8 @@ model Notification {
   // Relacionamentos
   sender   User @relation("UserNotificationsSent", fields: [senderId], references: [id], onDelete: Cascade)
   receiver User @relation("UserNotificationsReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+  chat     Chat? @relation("NotificationChat", fields: [chatId], references: [id])
+  publication Publication? @relation("NotificationPublication", fields: [publicationId], references: [id])
 
   // Data de criação
   createdAt DateTime @default(now())
@@ -124,6 +126,7 @@ model Chat {
   // Relacionamentos
   sender   User @relation("UserChatsSent", fields: [senderId], references: [id], onDelete: Cascade)
   receiver User @relation("UserChatsReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+  notifications Notification[] @relation("NotificationChat")
 
   // Data de criação
   createdAt DateTime @default(now())
@@ -137,7 +140,7 @@ model Message {
   content        String
   viewingStatus  ViewingStatus  @default(UNSEEN) // Enum para status de visualização
   shippingStatus ShippingStatus @default(PENDING) // Enum para status de envio
-  chatId         String         @default("temp_chat_id")
+  chatId         String         
   senderId       String
 
   // Relacionamentos
@@ -282,6 +285,7 @@ model Publication {
   //Relacionamento
   commentaries Comment[]
   likes        Like[]
+  notifications Notification[] @relation("NotificationPublication")
 
   //Relacionamento com o usuário que criou a publicação
   userId String
