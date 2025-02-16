@@ -8,6 +8,7 @@ import { AvaliationService } from "../services/AvaliationsService";
 import { BookCollectionService } from "../services/BookCollectionService";
 import { GoogleGeminiService } from "../services/GoogleGeminiServices";
 import { AvaliationCacheServices } from "../services/cacheClient/AvaliationCacheServices";
+import { ComplaintService } from "../services/ComplaintService";
 
 //Types
 import { CreateAvalaitonDTO } from "../types/AvaliationTypes";
@@ -28,6 +29,7 @@ export class AvaliationController {
     private bookCollectionService: BookCollectionService;
     private geminiServices: GoogleGeminiService;
     private bookService: BookService;
+    private complaintService: ComplaintService;
 
     constructor() {
         this.avaliationService = new AvaliationService();
@@ -36,6 +38,7 @@ export class AvaliationController {
         this.bookCollectionService = new BookCollectionService();
         this.geminiServices = new GoogleGeminiService();
         this.bookService = new BookService();
+        this.complaintService = new ComplaintService();
     };
 
     //Requisição para listar as avaliações de um livro
@@ -140,7 +143,12 @@ export class AvaliationController {
 
             //Validando que a avaliação não é de cunho preconceituoso
             const verifyTextPublication = await this.geminiServices.verifyTextPublication(avaliation.content);
-            if (!verifyTextPublication.sucess) return res.status(400).json({ message: verifyTextPublication.message, description: verifyTextPublication.description });
+            if (!verifyTextPublication.sucess) {
+                if(verifyTextPublication.description){
+                    await this.complaintService.createComplaint({ userId: idUser, type: "AVALIATION", text: avaliation.content, description: verifyTextPublication.description });
+                }
+                return res.status(400).json({ message: verifyTextPublication.message, description: verifyTextPublication.description });
+            };
 
             //Criando avaliação
             const createAvaliation = await this.avaliationService.createAvaliationForBook({ ...avaliation, userId: idUser, bookId: idBook });

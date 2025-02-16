@@ -11,6 +11,7 @@ import { createCommentSchema } from "../validators/commentValidator";
 import { createNotificationDTO } from "../types/NotificationTypes";
 import { Publication } from "@prisma/client";
 import { PublicationService } from "../services/PublicationService";
+import { ComplaintService } from "../services/ComplaintService";
 
 //Class
 export class CommentController {
@@ -18,12 +19,14 @@ export class CommentController {
     private geminiService: GoogleGeminiService;
     private notificationService: RealtimeServices;
     private publicationService: PublicationService;
+    private complaintService: ComplaintService;
 
     constructor () {
         this.commentService = new CommentService();
         this.geminiService = new GoogleGeminiService();
         this.notificationService = new RealtimeServices();
         this.publicationService = new PublicationService();
+        this.complaintService = new ComplaintService();
     };
 
     //Método para criar um comentário
@@ -35,7 +38,12 @@ export class CommentController {
 
             //Validando conteúdo do comnetário
             const verifyContentCommentary = await this.geminiService.verifyTextPublication(data.content);
-            if (!verifyContentCommentary.sucess) return res.status(400).json({message: verifyContentCommentary.message, description: verifyContentCommentary.description});
+            if (!verifyContentCommentary.sucess) {
+                if(verifyContentCommentary.description) {
+                    await this.complaintService.createComplaint({ userId: idUser, type: "COMMENT", text: data.content, description: verifyContentCommentary.description });
+                }
+                return res.status(400).json({message: verifyContentCommentary.message, description: verifyContentCommentary.description});
+            }
 
             //Verificando se a publicação existe
             const publication = await this.publicationService.findDataPublication(idPublication);

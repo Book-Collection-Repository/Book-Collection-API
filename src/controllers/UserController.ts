@@ -18,17 +18,20 @@ import { authenticateUserSchema, createUserSchema, updatePasswordSchema, updateP
 import { hashPassword, checkePassword } from "../utils/userUtils/hashPassword";
 import { handleZodError } from "../utils/errorHandler";
 import { generateToken } from "../utils/userUtils/generateToken";
+import { UserCacheServices } from "../services/cacheClient/UserCacheServices";
 
 //Class
 export class UserController {
     private userService: UserService;
     private redisClientService: RedisClientService;
-    private collectionService: CollectionService
+    private collectionService: CollectionService;
+    private redisCacheUser: UserCacheServices;
 
     constructor() {
         this.userService = new UserService();
         this.redisClientService = new RedisClientService();
         this.collectionService = new CollectionService();
+        this.redisCacheUser = new UserCacheServices();
     };
 
     // Listar todos os usuários
@@ -51,8 +54,8 @@ export class UserController {
             if (!validate(idUser)) return res.status(400).json({ error: "Invalid ID format" });
 
             //Primeiro procura no redis
-            //const cachedUser = await this.redisClientService.getUserData(idUser);
-            //if (cachedUser) return res.status(200).json({ message: "Data of Redis Client", searchUser: cachedUser });
+            const cachedUser = await this.redisCacheUser.getListUser(idUser);
+            if (cachedUser) return res.status(200).json({ searchUser: cachedUser });
 
             //Caso não encontre, realiza a pesquisa
             const searchUser = await this.userService.getUserByID(idUser);
@@ -61,7 +64,7 @@ export class UserController {
             if (!searchUser) return res.status(404).json({ error: "User not found" });
 
             // Armazenar o usuário no Redis para consultas futuras
-            //await this.redisClientService.saveUserData(idUser, searchUser);
+            await this.redisCacheUser.saveUser(idUser, searchUser);
 
             //Retornando o usuário
             return res.status(200).json({ searchUser });
@@ -77,11 +80,18 @@ export class UserController {
             //Pega o id do usuário
             const idUser = req.id_User;
             
+            //Primeiro procura no redis
+            const cachedUser = await this.redisCacheUser.getListUser(idUser);
+            if (cachedUser) return res.status(200).json({ searchUser: cachedUser });
+
             //Caso não encontre, realiza a pesquisa
             const searchUser = await this.userService.getUserByID(idUser);
 
             // Verificar se o usuário foi encontrado
             if (!searchUser) return res.status(404).json({ error: "User not found" });
+
+            // Armazenar o usuário no Redis para consultas futuras
+            await this.redisCacheUser.saveUser(idUser, searchUser);
 
             //Retornando o usuário
             return res.status(200).json({ searchUser });
