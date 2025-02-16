@@ -6,6 +6,7 @@ import { validate } from "uuid";
 import { PublicationService } from "../services/PublicationService";
 import { GoogleGeminiService } from "../services/GoogleGeminiServices";
 import { PublicationCacheServices } from "../services/cacheClient/PublicationCacheServices";
+import { ComplaintService } from "../services/ComplaintService";
 
 //Validator
 import { createPublicationSchema } from "../validators/publicationValidator";
@@ -15,11 +16,13 @@ export class PublicationController {
     private publicationService: PublicationService;
     private geminiService: GoogleGeminiService;
     private cacheService: PublicationCacheServices;
+    private complaintService: ComplaintService;
 
     constructor() {
         this.publicationService = new PublicationService();
         this.geminiService = new GoogleGeminiService();
         this.cacheService = new PublicationCacheServices();
+        this.complaintService = new ComplaintService();
     };
 
     //Requisição para listar todas as publicações realizada recentemente
@@ -110,7 +113,10 @@ export class PublicationController {
 
             //Validando a informação recebida
             const validationData = await this.geminiService.verifyTextPublication(data.content);
-            if (!validationData.sucess) return res.status(400).json({ message: validationData.message, description: validationData.description });
+            if (!validationData.sucess) {
+                if(validationData.description) await this.complaintService.createComplaint({ userId: idUser, type: "PUBLICATION", text: data.content, description: validationData.description });
+                return res.status(400).json({ message: validationData.message, description: validationData.description });
+            } 
 
             //Enviando os dados
             const createData = await this.publicationService.createPublication(idUser, data.content);

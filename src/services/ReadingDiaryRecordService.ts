@@ -4,6 +4,7 @@ import { prisma } from "./prisma";
 //Services
 import { ReadingDiaryServices } from "./ReagingDiaryServices";
 import { GoogleGeminiService } from "./GoogleGeminiServices";
+import { ComplaintService } from "./ComplaintService";
 
 //Types
 import { RecordDiaryDTO } from "../types/readingDiaryRecordTypes";
@@ -13,10 +14,12 @@ export class ReadingDiaryRecordServices {
 
     private readingDiaryService: ReadingDiaryServices;
     private geminiServices: GoogleGeminiService;
+    private complaintService: ComplaintService;
 
     constructor() {
         this.readingDiaryService = new ReadingDiaryServices();
         this.geminiServices = new GoogleGeminiService();
+        this.complaintService = new ComplaintService();
     };
 
     //Método para listar todos os registros de um diário de leitura
@@ -55,7 +58,10 @@ export class ReadingDiaryRecordServices {
 
             //Verificando o conteúdo do registro de leitura
             const verifyContent = await this.geminiServices.verifyTextPublication(data.content);
-            if (!verifyContent.sucess) return { success: verifyContent.sucess, message: verifyContent.message, description: verifyContent.description };
+            if (!verifyContent.sucess) {
+                if (verifyContent.description) await this.complaintService.createComplaint({ userId, type: "READING_DIARY", text: data.content, description: verifyContent.description });
+                return { success: verifyContent.sucess, message: verifyContent.message, description: verifyContent.description };
+            }
 
             //Criando o registro
             const createRecord = await prisma.readingDiaryRecord.create({

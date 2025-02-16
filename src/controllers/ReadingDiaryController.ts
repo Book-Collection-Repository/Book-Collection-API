@@ -175,7 +175,7 @@ export class ReadingDiaryController {
             if (!removeReadingDiary.success) return res.status(400).json({ message: removeReadingDiary.message });
 
             //Retornando a criação do reading diary
-            return res.status(201).json({ message: removeReadingDiary.message });
+            return res.status(200).json({ message: removeReadingDiary.message });
 
         } catch (error) {
             // Caso seja um erro desconhecido, retornar erro genérico

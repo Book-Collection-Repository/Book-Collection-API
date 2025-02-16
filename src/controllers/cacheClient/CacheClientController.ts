@@ -8,6 +8,8 @@ import { FollwersCacheServices } from "../../services/cacheClient/FollwersCacheS
 import { PublicationCacheServices } from "../../services/cacheClient/PublicationCacheServices";
 import { ReadingDiariesCacheServices } from "../../services/cacheClient/ReadingDiariesCacheServices";
 import { ReccomendCacheServices } from "../../services/cacheClient/ReccomendBooksServices";
+import { RedisClientService } from "../../services/RedisClientService";
+import { UserCacheServices } from "../../services/cacheClient/UserCacheServices";
 
 //Class
 export class CacheClientController {
@@ -17,6 +19,7 @@ export class CacheClientController {
     private follow: FollwersCacheServices;
     private diaires: ReadingDiariesCacheServices;
     private books: ReccomendCacheServices;
+    private user: UserCacheServices;
 
     constructor() {
         this.publication = new PublicationCacheServices();
@@ -25,7 +28,41 @@ export class CacheClientController {
         this.follow = new FollwersCacheServices();
         this.diaires = new ReadingDiariesCacheServices();
         this.books = new ReccomendCacheServices();
+        this.user = new UserCacheServices();
     }
+
+    /** ================= METHODS OF USER ===================*/
+    async getUserData(req: Request, res: Response): Promise<Response> {
+        try {
+            //Buscando dados
+            const idUser = req.id_User;
+
+            //Buscando usuário
+            const user = await this.user.getListUser(idUser);
+
+            //Retornando dados
+            return res.status(200).json({ message: "Datas of user", data: user });
+        } catch (error) {
+            console.error("Erro in return dates of user: ", error);
+            return res.status(500).json({ error: error });
+        }
+    };
+
+    async saveUserData(req: Request, res: Response): Promise<Response> {
+        try {
+            //Buscando dados do usuário
+            const idUser = req.id_User;
+            const user = req.body.user;
+
+            //Salvando os dados do usuário
+            await this.user.saveUser(idUser, user);
+
+            return res.status(201).json({ message: "Salved user datas" });
+        } catch (error) {
+            console.error("Erro in salved user datas:", error);
+            return res.status(500).json({ error: error });
+        }
+    };
 
     /** ================= METHODS OF AVALIATIONS ===================*/
     async getListAllAvaliations(req: Request, res: Response): Promise<Response> {
@@ -47,13 +84,13 @@ export class CacheClientController {
     async saveAllAvaliations(req: Request, res: Response): Promise<Response> {
         try {
             //Buscando dados do usuário
-            const idUser =  req.id_User;
+            const idUser = req.id_User;
             const avaliations = req.body.avaliations;
 
             //Salvando os dados do usuário
             await this.avaliation.saveAllAvaliations(idUser, avaliations);
 
-            return res.status(201).json({message: "Salved avaliations datas of user"});
+            return res.status(201).json({ message: "Salved avaliations datas of user" });
         } catch (error) {
             console.error("Erro in salved all avaliations of user:", error);
             return res.status(500).json({ error: error });
@@ -86,7 +123,7 @@ export class CacheClientController {
             //Salvando dados no cache
             await this.collection.saveAllCollections(idUser, collections);
 
-            return res.status(201).json({message: "Salved collections datas of user"});
+            return res.status(201).json({ message: "Salved collections datas of user" });
         } catch (error) {
             console.error("Erro in salved all collections of user:", error);
             return res.status(500).json({ error: error });
@@ -136,7 +173,7 @@ export class CacheClientController {
             //Salvando dados no cache
             await this.follow.saveFollowers(idUser, followers);
 
-            return res.status(201).json({message: "Salved followers datas of user"});
+            return res.status(201).json({ message: "Salved followers datas of user" });
         } catch (error) {
             console.error("Erro in salved all followers of user:", error);
             return res.status(500).json({ error: error });
@@ -168,7 +205,7 @@ export class CacheClientController {
             //Salvando dados no cache
             await this.follow.saveFolloweds(idUser, followeds);
 
-            return res.status(201).json({message: "Salved followeds datas of user"});
+            return res.status(201).json({ message: "Salved followeds datas of user" });
         } catch (error) {
             console.error("Erro in salved all followeds of user:", error);
             return res.status(500).json({ error: error });
@@ -189,19 +226,19 @@ export class CacheClientController {
         } catch (error) {
             console.error("Erro in return all publications of user: ", error);
             return res.status(500).json({ error: error });
-        }    
-    }; 
+        }
+    };
 
     async saveAllPublications(req: Request, res: Response): Promise<Response> {
         try {
             //Buscando dados do usuário
-            const idUser =  req.id_User;
+            const idUser = req.id_User;
             const publication = req.body.publications;
 
             //Salvando os dados do usuário
             await this.publication.saveAllPublications(idUser, publication);
 
-            return res.status(201).json({message: "Salved publications datas of user"});
+            return res.status(201).json({ message: "Salved publications datas of user" });
         } catch (error) {
             console.error("Erro in salved all publications of user:", error);
             return res.status(500).json({ error: error });
@@ -228,13 +265,13 @@ export class CacheClientController {
     async salvedListAllDiaries(req: Request, res: Response): Promise<Response> {
         try {
             //Buscando dados do usuário
-            const idUser =  req.id_User;
+            const idUser = req.id_User;
             const diaires = req.body.diaries;
 
             //Salvando os dados do usuário
             await this.diaires.saveAllReadingDiaries(idUser, diaires);
 
-            return res.status(201).json({message: "Salved all diaries datas of user"});
+            return res.status(201).json({ message: "Salved all diaries datas of user" });
         } catch (error) {
             console.error("Erro in salved all diaries of user:", error);
             return res.status(500).json({ error: error });
@@ -291,7 +328,7 @@ export class CacheClientController {
             return res.status(500).json({ error: error });
         }
     };
-    
+
     /** ================= METHODS OF PREFERENCES FOR COLLECTION ===================*/
     async getListPrefferencesForCollecton(req: Request, res: Response): Promise<Response> {
         try {
@@ -321,13 +358,13 @@ export class CacheClientController {
             await this.books.savePrefferencesForCollection(idUser, idCollection, data);
 
             //Retornando dados
-            return res.status(200).json({ message: "Salved of prefferences of user's collection"});
+            return res.status(200).json({ message: "Salved of prefferences of user's collection" });
         } catch (error) {
             console.error("Erro in salved prefferences of user's collection: ", error);
             return res.status(500).json({ error: error });
         }
     };
-    
+
     /** ================= METHODS OF RECCOMENDATIONS FOR COLLECTION ===================*/
     async getListReccomendationsForCollecton(req: Request, res: Response): Promise<Response> {
         try {
@@ -357,13 +394,13 @@ export class CacheClientController {
             await this.books.saveReccomendationsForCollection(idUser, idCollection, data);
 
             //Retornando dados
-            return res.status(200).json({ message: "Salved of recomendations of user's collection"});
+            return res.status(200).json({ message: "Salved of recomendations of user's collection" });
         } catch (error) {
             console.error("Erro in salved recomendations of user's collection: ", error);
             return res.status(500).json({ error: error });
         }
     };
-    
+
     /** ================= METHODS OF SEARCH BOOKS ===================*/
     async getListSearchBooks(req: Request, res: Response): Promise<Response> {
         try {
@@ -391,7 +428,7 @@ export class CacheClientController {
             await this.books.saveSearchBooks(idUser, data);
 
             //Retornando dados
-            return res.status(201).json({ message: "Salved of books search of user's collection"});
+            return res.status(201).json({ message: "Salved of books search of user's collection" });
         } catch (error) {
             console.error("Erro in salved books search of user's collection: ", error);
             return res.status(500).json({ error: error });
