@@ -62,6 +62,14 @@ enum ActionNotification {
   SEE_USER
 }
 
+// Enumeração para definir denúncias
+enum TypeComplaint {
+  COMMENT
+  AVALIATION
+  PUBLICATION
+  READING_DIARY
+}
+
 // ========== MODELO DO BANCO DE DADOS =========
 
 //Entidade User
@@ -90,10 +98,26 @@ model User {
   publications          Publication[]
   commentaries          Comment[]
   likes                 Like[]
+  complaint             Complaint[]
 
   //Data de criação
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+//Entidade de Denúncia
+model Complaint {
+  id          String        @id @default(uuid())
+  userId      String
+  type        TypeComplaint
+  text        String
+  description String
+
+  //Relacionamentos
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  //Data de criação
+  createdAt DateTime @default(now())
 }
 
 //Entidade de notificação
@@ -107,9 +131,9 @@ model Notification {
   publicationId String?
 
   // Relacionamentos
-  sender   User @relation("UserNotificationsSent", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver User @relation("UserNotificationsReceived", fields: [receiverId], references: [id], onDelete: Cascade)
-  chat     Chat? @relation("NotificationChat", fields: [chatId], references: [id])
+  sender      User         @relation("UserNotificationsSent", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User         @relation("UserNotificationsReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+  chat        Chat?        @relation("NotificationChat", fields: [chatId], references: [id])
   publication Publication? @relation("NotificationPublication", fields: [publicationId], references: [id])
 
   // Data de criação
@@ -124,8 +148,8 @@ model Chat {
   messages   Message[]
 
   // Relacionamentos
-  sender   User @relation("UserChatsSent", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver User @relation("UserChatsReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender        User           @relation("UserChatsSent", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver      User           @relation("UserChatsReceived", fields: [receiverId], references: [id], onDelete: Cascade)
   notifications Notification[] @relation("NotificationChat")
 
   // Data de criação
@@ -140,7 +164,7 @@ model Message {
   content        String
   viewingStatus  ViewingStatus  @default(UNSEEN) // Enum para status de visualização
   shippingStatus ShippingStatus @default(PENDING) // Enum para status de envio
-  chatId         String         
+  chatId         String
   senderId       String
 
   // Relacionamentos
@@ -202,7 +226,7 @@ model Collection {
   userCollection User   @relation("UserCollection", fields: [userId], references: [id], onDelete: Cascade)
 
   // Relacionamento com os livros
-  books BookCollection[]
+  books    BookCollection[]
 
   //Garantindo que a coleção seja única para cada usuário
   @@unique([defaultType, userId])
@@ -234,8 +258,8 @@ model Avaliation {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Relacionamento com o livro avaliado
-  bookId String
-  book   Book   @relation(fields: [bookId], references: [id])
+  bookId   String
+  book     Book       @relation(fields: [bookId], references: [id])
 
   // Restringe para que cada usuário possa avaliar um livro apenas uma vez
   @@unique([userId, bookId])
@@ -283,8 +307,8 @@ model Publication {
   createdAt         DateTime @default(now())
 
   //Relacionamento
-  commentaries Comment[]
-  likes        Like[]
+  commentaries  Comment[]
+  likes         Like[]
   notifications Notification[] @relation("NotificationPublication")
 
   //Relacionamento com o usuário que criou a publicação
