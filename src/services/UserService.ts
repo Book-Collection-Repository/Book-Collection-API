@@ -23,12 +23,12 @@ export class UserService {
     async getUserByID(id: string) {
         return await prisma.user.findUnique({
             where: { id },
-            include: {
-                avaliations: true,
-                publications: true,
-                followers: true,
-                following: true,
-            }
+            // include: {
+            //     avaliations: true,
+            //     publications: true,
+            //     followers: true,
+            //     following: true,
+            // }
         });
     };
 
