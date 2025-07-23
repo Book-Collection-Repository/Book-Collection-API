@@ -42,6 +42,10 @@ build/Release
 node_modules/
 jspm_packages/
 
+# Directory for photos users
+uploads/
+__tests__/
+
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
 
